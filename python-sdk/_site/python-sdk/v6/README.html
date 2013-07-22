@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="robots" content="all" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<meta name="description" content="七牛云存储API和SDK文档" />
+		<meta name="keywords" content="七牛, 七牛云存储, 七牛云存储API, 七牛云存储SDK, qrsync, qboxrsctl, QinuRS, S3" />
+		<meta name="author" content="qiniu.com" />
+		<meta name="copyright" content="qiniu.com" />
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<meta http-equiv="Content-Language" content="zh-cn" />
+		<meta http-equiv="imagetoolbar" content="false" />
+		<meta name="MSSmartTagsPreventParsing" content="true" />
+		<title>Python SDK 使用指南 | 七牛云存储</title>
+		<link rel="shortcut icon" href="/favicon.ico" type="image/gif" />
+		<link href="/static/css/reset.css" rel="stylesheet" type="text/css" />
+		<link href="/static/css/960.css" rel="stylesheet" type="text/css" />
+		<link href="/static/css/uv_active4d.css" rel="stylesheet" type="text/css" />
+		<link href="/static/css/documentation.css" media="screen" rel="stylesheet" type="text/css">
+	</head>
+	<body class="api">
+		<div id="header-wrapper">
+			<div id="header">
+				<div>
+					<a class="logo" href="/">七牛云存储</a>
+					<ul class="nav">
+						<li><a href="https://portal.qiniu.com">开发者平台</a></li>
+						<li><a href="http://www.qiniu.com">七牛官网</a></li>
+						<!-- <li><a href="/faq/FAQ.html">FAQ</a></li> -->
+					</ul>
+				</div>
+			</div><!-- #header -->
+		</div><!-- #header-wrapper -->
+
+		<div id="wrapper">
+			<div class="content">	
+				<h1>Python SDK 使用指南<span id="version">v6</span></h1>
+				<article>
+				<p>此 Python SDK 适用于2.x版本，基于 <a href="http://docs.qiniu.com/">七牛云存储官方API</a> 构建。使用此 SDK 构建您的网络应用程序，能让您以非常便捷地方式将数据安全地存储到七牛云存储上。无论您的网络应用是一个网站程序，还是包括从云端（服务端程序）到终端（手持设备应用）的架构的服务或应用，通过七牛云存储及其 SDK，都能让您应用程序的终端用户高速上传和下载，同时也让您的服务端更加轻盈。</p>
+
+<p>SDK 下载地址：<a href="https://github.com/qiniu/python-sdk/tags">https://github.com/qiniu/python-sdk/tags</a></p>
+
+<p><strong>文档大纲</strong></p>
+
+<ul>
+<li><a href="#overview">概述</a></li>
+<li><a href="#prepare">准备开发环境</a>
+
+<ul>
+<li><a href="#install">安装</a></li>
+<li><a href="#appkey">ACCESS_KEY 和 SECRET_KEY</a></li>
+</ul></li>
+<li><a href="#sdk-usage">使用SDK</a>
+
+<ul>
+<li><a href="#init">初始化环境</a></li>
+<li><a href="#io-put">上传文件</a>
+
+<ul>
+<li><a href="#io-put-flow">上传流程</a>
+
+<ul>
+<li><a href="#io-put-policy">上传策略</a></li>
+<li><a href="#upload-token">上传凭证</a></li>
+<li><a href="#put-extra">PutExtra</a></li>
+<li><a href="#upload-do">上传文件</a></li>
+<li><a href="#resumable-io-put">断点续上传、分块并行上传</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#io-get">下载文件</a>
+
+<ul>
+<li><a href="#io-get-public">下载公有文件</a></li>
+<li><a href="#io-get-private">下载私有文件</a></li>
+<li><a href="#resumable-io-get">断点续下载</a></li>
+</ul></li>
+<li><a href="#rs">资源操作</a>
+
+<ul>
+<li><a href="#rs-stat">获取文件信息</a></li>
+<li><a href="#rs-copy">复制文件</a></li>
+<li><a href="#rs-move">移动文件</a></li>
+<li><a href="#rs-delete">删除文件</a></li>
+<li><a href="#rs-batch">批量操作</a>
+
+<ul>
+<li><a href="#batch-stat">批量获取文件信息</a></li>
+<li><a href="#batch-copy">批量复制文件</a></li>
+<li><a href="#batch-move">批量移动文件</a></li>
+<li><a href="#batch-delete">批量删除文件</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#rsf">高级管理操作</a>
+
+<ul>
+<li><a href="#list-prefix">列出文件</a></li>
+</ul></li>
+<li><a href="#fop">云处理</a>
+
+<ul>
+<li><a href="#fop-image">图像</a>
+
+<ul>
+<li><a href="#fop-image-info">查看图像属性</a></li>
+<li><a href="#fop-exif">查看图片EXIF信息</a></li>
+<li><a href="#fop-image-view">生成图片预览</a></li>
+</ul></li>
+</ul></li>
+</ul></li>
+<li><a href="#contribution">贡献代码</a></li>
+<li><a href="#license">许可证</a></li>
+</ul>
+
+<p><a name="overview"></a></p>
+
+<h2>概述</h2>
+
+<p>七牛云存储的 Python 语言版本 SDK（本文以下称 Python-SDK）是对七牛云存储API协议的一层封装，以提供一套对于 Python 开发者而言简单易用的开发工具。Python 开发者在对接 Python-SDK 时无需理解七牛云存储 API 协议的细节，原则上也不需要对 HTTP 协议和原理做非常深入的了解，但如果拥有基础的 HTTP 知识，对于出错场景的处理可以更加高效。</p>
+
+<p>Python-SDK 被设计为同时适合服务器端和客户端使用。服务端是指开发者自己的业务服务器，客户端是指开发者提供给终端用户的软件，通常运行在 Windows/Mac/Linux 这样的桌面平台上。服务端因为有七牛颁发的 AccessKey/SecretKey，可以做很多客户端做不了的事情，比如删除文件、移动/复制文件等操作。一般而言，客服端操作文件需要获得服务端的授权。客户端上传文件需要获得服务端颁发的 <a href="http://docs.qiniu.com/api/put.html#uploadToken">uptoken（上传授权凭证）</a>，客户端下载文件（包括下载处理过的文件，比如下载图片的缩略图）需要获得服务端颁发的 <a href="http://docs.qiniu.com/api/get.html#download-token">dntoken（下载授权凭证）</a>。但开发者也可以将 bucket 设置为公开，此时文件有永久有效的访问地址，不需要业务服务器的授权，这对网站的静态文件（如图片、js、css、html）托管非常方便。</p>
+
+<p>从 v5.0.0 版本开始，我们对 SDK 的内容进行了精简。所有管理操作，比如：创建/删除 bucket、为 bucket 绑定域名（publish）、设置数据处理的样式分隔符（fop seperator）、新增数据处理样式（fop style）等都去除了，统一建议到<a href="https://portal.qiniu.com/">开发者后台</a>来完成。另外，此前服务端还有自己独有的上传 API，现在也推荐统一成基于客户端上传的工作方式。</p>
+
+<p>从内容上来说，Python-SDK 主要包含如下几方面的内容：</p>
+
+<ul>
+<li>公共部分，所有用况下都用到：qiniu/rpc.py, qiniu/httplib_chunk.py</li>
+<li>客户端上传文件：qiniu/io.py</li>
+<li>客户端断点续上传：qiniu/resumable_io.py</li>
+<li>数据处理：qiniu/fop.py</li>
+<li>服务端操作：qiniu/auth/digest.py, qiniu/auth/up.py (授权), qiniu/rs/rs.py, qiniu/rs/rs_token.py (资源操作, uptoken/dntoken颁发)</li>
+</ul>
+
+<p><a name="prepare"></a></p>
+
+<h2>准备开发环境</h2>
+
+<p><a name="install"></a></p>
+
+<h3>安装</h3>
+
+<p>直接安装:</p>
+
+<pre><code>pip install qiniu
+#或
+easy_install qiniu
+</code></pre>
+
+<p>Python-SDK可以使用<code>pip</code>或<code>easy_install</code>从PyPI服务器上安装，但不包括文档和样例。如果需要，请下载源码并安装。</p>
+
+<p>源码安装：</p>
+
+<p>从<a href="https://github.com/qiniu/python-sdk/releases">Python-SDK下载地址</a>下载源码：</p>
+
+<pre><code>tar xvzf python-sdk-$VERSION.tar.gz
+cd python-sdk-$VERSION
+python setup.py install
+</code></pre>
+
+<p><a name="appkey"></a></p>
+
+<h3>ACCESS_KEY 和 SECRET_KEY</h3>
+
+<p>在使用SDK 前，您需要拥有一对有效的 AccessKey 和 SecretKey 用来进行签名授权。</p>
+
+<p>可以通过如下步骤获得：</p>
+
+<ol>
+<li><a href="https://portal.qiniu.com/signup">开通七牛开发者帐号</a></li>
+<li><a href="https://portal.qiniu.com/setting/key">登录七牛开发者自助平台，查看 Access Key 和 Secret Key</a> 。</li>
+</ol>
+
+<p><a name="sdk-usage"></a></p>
+
+<h2>使用SDK</h2>
+
+<p><a name="init"></a></p>
+
+<h3>初始化环境</h3>
+
+<p>在获取到 Access Key 和 Secret Key 之后，您可以在您的程序中调用如下两行代码进行初始化对接, 要确保<code>ACCESS_KEY</code> 和 <code>SECRET_KEY</code> 在调用所有七牛API服务之前均已赋值：</p>
+
+<pre><code class="python">import qiniu.conf
+
+qiniu.conf.ACCESS_KEY = &quot;&lt;YOUR_APP_ACCESS_KEY&gt;&quot;
+qiniu.conf.SECRET_KEY = &quot;&lt;YOUR_APP_SECRET_KEY&gt;&quot;
+</code></pre>
+
+<p><a name="io-put"></a></p>
+
+<h3>上传文件</h3>
+
+<p>为了尽可能地改善终端用户的上传体验，七牛云存储首创了客户端直传功能。一般云存储的上传流程是：</p>
+
+<pre><code>客户端（终端用户） =&gt; 业务服务器 =&gt; 云存储服务
+</code></pre>
+
+<p>这样多了一次上传的流程，和本地存储相比，会相对慢一些。但七牛引入了客户端直传，将整个上传过程调整为：</p>
+
+<pre><code>客户端（终端用户） =&gt; 七牛 =&gt; 业务服务器
+</code></pre>
+
+<p>客户端（终端用户）直接上传到七牛的服务器，通过DNS智能解析，七牛会选择到离终端用户最近的ISP服务商节点，速度会比本地存储快很多。文件上传成功以后，七牛的服务器使用回调功能，只需要将非常少的数据（比如Key）传给应用服务器，应用服务器进行保存即可。</p>
+
+<p><a name="io-put-flow"></a></p>
+
+<h4>上传流程</h4>
+
+<p>在七牛云存储中，整个上传流程大体分为这样几步：</p>
+
+<ol>
+<li>业务服务器颁发 <a href="http://docs.qiniu.com/api/put.html#uploadToken">uptoken（上传授权凭证）</a>给客户端（终端用户）</li>
+<li>客户端凭借 <a href="http://docs.qiniu.com/api/put.html#uploadToken">uptoken</a> 上传文件到七牛</li>
+<li>在七牛获得完整数据后，发起一个 HTTP 请求回调到业务服务器</li>
+<li>业务服务器保存相关信息，并返回一些信息给七牛</li>
+<li>七牛原封不动地将这些信息转发给客户端（终端用户）</li>
+</ol>
+
+<p>需要注意的是，回调到业务服务器的过程是可选的，它取决于业务服务器颁发的 <a href="http://docs.qiniu.com/api/put.html#uploadToken">uptoken</a>。如果没有回调，七牛会返回一些标准的信息（比如文件的 hash）给客户端。如果上传发生在业务服务器，以上流程可以自然简化为：</p>
+
+<ol>
+<li>业务服务器生成 uptoken（不设置回调，自己回调到自己这里没有意义）</li>
+<li>凭借 <a href="http://docs.qiniu.com/api/put.html#uploadToken">uptoken</a> 上传文件到七牛</li>
+<li>善后工作，比如保存相关的一些信息</li>
+</ol>
+
+<p><a name="io-put-policy"></a></p>
+
+<h5>上传策略</h5>
+
+<p><a href="http://docs.qiniu.com/api/put.html#uploadToken">uptoken</a> 实际上是用 AccessKey/SecretKey 进行数字签名的上传策略(<code>qiniu.rs.PutPolicy</code>)，它控制则整个上传流程的行为。让我们快速过一遍你都能够决策啥：</p>
+
+<pre><code class="python">class PutPolicy(object):
+    scope = None             # 可以是 bucketName 或者 bucketName:key
+    expires = 3600           # 默认是 3600 秒
+    callbackUrl = None
+    callbackBody = None
+    returnUrl = None
+    returnBody = None
+    endUser = None
+    asyncOps = None
+
+    def __init__(self, scope):
+        self.scope = scope
+</code></pre>
+
+<ul>
+<li><code>scope</code> 限定客户端的权限。如果 <code>scope</code> 是 bucket，则客户端只能新增文件到指定的 bucket，不能修改文件。如果 <code>scope</code> 为 bucket:key，则客户端可以修改指定的文件。</li>
+<li><code>callbackUrl</code> 设定业务服务器的回调地址，这样业务服务器才能感知到上传行为的发生。</li>
+<li><code>callbackBody</code> 设定业务服务器的回调信息。文件上传成功后，七牛向业务服务器的callbackUrl发送的POST请求携带的数据。支持 <a href="http://docs.qiniu.com/api/put.html#MagicVariables">魔法变量</a> 和 <a href="http://docs.qiniu.com/api/put.html#xVariables">自定义变量</a>。</li>
+<li><code>returnUrl</code> 设置用于浏览器端文件上传成功后，浏览器执行301跳转的URL，一般为 HTML Form 上传时使用。文件上传成功后浏览器会自动跳转到 <code>returnUrl?upload_ret=returnBody</code>。</li>
+<li><code>returnBody</code> 可调整返回给客户端的数据包，支持 <a href="http://docs.qiniu.com/api/put.html#MagicVariables">魔法变量</a> 和 <a href="http://docs.qiniu.com/api/put.html#xVariables">自定义变量</a>。<code>returnBody</code> 只在没有 <code>callbackUrl</code> 时有效（否则直接返回 <code>callbackUrl</code> 返回的结果）。不同情形下默认返回的 <code>returnBody</code> 并不相同。在一般情况下返回的是文件内容的 <code>hash</code>，也就是下载该文件时的 <code>etag</code>；但指定 <code>returnUrl</code> 时默认的 <code>returnBody</code> 会带上更多的信息。</li>
+<li><code>asyncOps</code> 可指定上传完成后，需要自动执行哪些数据处理。这是因为有些数据处理操作（比如音视频转码）比较慢，如果不进行预转可能第一次访问的时候效果不理想，预转可以很大程度改善这一点。</li>
+</ul>
+
+<p>关于上传策略更完整的说明，请参考 <a href="http://docs.qiniu.com/api/put.html#uploadToken">uptoken</a>。</p>
+
+<p><a name="upload-token"></a></p>
+
+<h5>上传凭证</h5>
+
+<p>服务端生成 <a href="http://docs.qiniu.com/api/put.html#uploadToken">uptoken</a> 代码如下：</p>
+
+<pre><code class="python">import qiniu.conf
+
+qiniu.conf.ACCESS_KEY = &quot;&lt;YOUR_APP_ACCESS_KEY&gt;&quot;
+qiniu.conf.SECRET_KEY = &quot;&lt;YOUR_APP_SECRET_KEY&gt;&quot;
+
+import qiniu.rs
+
+policy = qiniu.rs.PutPolicy(bucket_name)
+uptoken = policy.token()
+</code></pre>
+
+<p><a name="put-extra"></a></p>
+
+<h5>PutExtra</h5>
+
+<p>PutExtra是上传时的可选信息，默认为None</p>
+
+<pre><code class="python">class PutExtra(object):
+    params = {}
+    mime_type = 'application/octet-stream'
+    crc32 = &quot;&quot;
+    check_crc = 0
+</code></pre>
+
+<ul>
+<li><code>params</code> 是一个字典。<a href="http://docs.qiniu.com/api/put.html#xVariables">自定义变量</a>，key必须以 x: 开头命名，不限个数。可以在 uploadToken 的 callbackBody 选项中求值。</li>
+<li><code>mime_type</code> 表示数据的MimeType，当不指定时七牛服务器会自动检测。</li>
+<li><code>crc32</code> 待检查的crc32值</li>
+<li><code>check_crc</code> 可选值为0, 1, 2。
+<code>check_crc == 0</code>: 表示不进行 crc32 校验。
+<code>check_crc == 1</code>: 上传二进制数据时等同于 <code>check_crc=2</code>；上传本地文件时会自动计算 crc32 值。
+<code>check_crc == 2</code>: 表示进行 crc32 校验，且 crc32 值就是上面的 <code>crc32</code> 变量</li>
+</ul>
+
+<p><a name="upload-do"></a></p>
+
+<h5>上传文件</h5>
+
+<p>上传文件到七牛（通常是客户端完成，但也可以发生在服务端）：</p>
+
+<p>直接上传二进制流</p>
+
+<pre><code class="python">import qiniu.conf
+
+qiniu.conf.ACCESS_KEY = &quot;&lt;YOUR_APP_ACCESS_KEY&gt;&quot;
+qiniu.conf.SECRET_KEY = &quot;&lt;YOUR_APP_SECRET_KEY&gt;&quot;
+
+import qiniu.io
+
+extra = qiniu.io.PutExtra()
+extra.mime_type = &quot;text/plain&quot;
+
+# data 可以是str或read()able对象
+data = StringIO.StringIO(&quot;hello!&quot;)
+ret, err = qiniu.io.put(uptoken, key, data, extra)
+if err is not None:
+    sys.stderr.write('error: %s ' % err)
+    return
+</code></pre>
+
+<p>上传本地文件</p>
+
+<pre><code class="python">import qiniu.conf
+
+qiniu.conf.ACCESS_KEY = &quot;&lt;YOUR_APP_ACCESS_KEY&gt;&quot;
+qiniu.conf.SECRET_KEY = &quot;&lt;YOUR_APP_SECRET_KEY&gt;&quot;
+
+import qiniu.io
+
+localfile = &quot;%s&quot; % __file__
+
+ret, err = qiniu.io.put_file(uptoken, key, localfile)
+if err is not None:
+    sys.stderr.write('error: %s ' % err)
+    return
+</code></pre>
+
+<p>ret是一个字典，含有<code>hash</code>，<code>key</code>等信息。</p>
+
+<p><a name="resumable-io-put"></a></p>
+
+<h5>断点续上传、分块并行上传</h5>
+
+<p>除了基本的上传外，七牛还支持你将文件切成若干块（除最后一块外，每个块固定为4M大小），每个块可独立上传，互不干扰；每个分块块内则能够做到断点上续传。</p>
+
+<p>我们来看支持了断点上续传、分块并行上传的基本样例：</p>
+
+<p>上传二进制流</p>
+
+<pre><code class="python">import qiniu.conf
+
+qiniu.conf.ACCESS_KEY = &quot;&lt;YOUR_APP_ACCESS_KEY&gt;&quot;
+qiniu.conf.SECRET_KEY = &quot;&lt;YOUR_APP_SECRET_KEY&gt;&quot;
+
+import qiniu.resumable_io as rio
+
+a = &quot;resumable upload string&quot;
+extra = rio.PutExtra(bucket_name)
+extra.mime_type = &quot;text/plain&quot;
+ret, err = rio.put(uptoken, key, StringIO.StringIO(a), len(a), extra)
+if err is not None:
+    sys.stderr.write('error: %s ' % err)
+    return
+print ret,
+</code></pre>
+
+<p>上传本地文件</p>
+
+<pre><code class="python">import qiniu.conf
+
+qiniu.conf.ACCESS_KEY = &quot;&lt;YOUR_APP_ACCESS_KEY&gt;&quot;
+qiniu.conf.SECRET_KEY = &quot;&lt;YOUR_APP_SECRET_KEY&gt;&quot;
+
+import qiniu.resumable_io as rio
+
+localfile = &quot;%s&quot; % __file__
+extra = rio.PutExtra(bucket_name)
+
+ret, err = rio.put_file(uptoken, key, localfile, extra)
+if err is not None:
+    sys.stderr.write('error: %s ' % err)
+    return
+print ret,
+</code></pre>
+
+<p><a name="io-get"></a></p>
+
+<h3>下载文件</h3>
+
+<p><a name="io-get-public"></a></p>
+
+<h4>下载公有文件</h4>
+
+<p>每个 bucket 都会绑定一个或多个域名（domain）。如果这个 bucket 是公开的，那么该 bucket 中的所有文件可以通过一个公开的下载 url 可以访问到：</p>
+
+<pre><code>http://&lt;domain&gt;/&lt;key&gt;
+</code></pre>
+
+<p>假设某个 bucket 既绑定了七牛的二级域名，如 hello.qiniudn.com，也绑定了自定义域名（需要备案），如 hello.com。那么该 bucket 中 key 为 a/b/c.htm 的文件可以通过 <a href="http://hello.qiniudn.com/a/b/c.htm">http://hello.qiniudn.com/a/b/c.htm</a> 或 <a href="http://hello.com/a/b/c.htm">http://hello.com/a/b/c.htm</a> 中任意一个 url 进行访问。</p>
+
+<p><a name="io-get-private"></a></p>
+
+<h4>下载私有文件</h4>
+
+<p>如果某个 bucket 是私有的，那么这个 bucket 中的所有文件只能通过一个的临时有效的 downloadUrl 访问：</p>
+
+<pre><code>http://&lt;domain&gt;/&lt;key&gt;?e=&lt;deadline&gt;&amp;token=&lt;dntoken&gt;
+</code></pre>
+
+<p>其中 dntoken 是由业务服务器签发的一个<a href="http://docs.qiniu.com/api/get.html#download-token">临时下载授权凭证</a>，deadline 是 dntoken 的有效期。dntoken不需要单独生成，SDK 提供了生成完整 downloadUrl 的方法（包含了 dntoken），示例代码如下：</p>
+
+<pre><code class="python">import qiniu.conf
+
+qiniu.conf.ACCESS_KEY = &quot;&lt;YOUR_APP_ACCESS_KEY&gt;&quot;
+qiniu.conf.SECRET_KEY = &quot;&lt;YOUR_APP_SECRET_KEY&gt;&quot;
+
+import qiniu.rs
+
+base_url = qiniu.rs.make_base_url(domain, key)
+policy = qiniu.rs.GetPolicy()
+private_url = policy.make_request(base_url)
+</code></pre>
+
+<p>生成 downloadUrl 后，服务端下发 downloadUrl 给客户端。客户端收到 downloadUrl 后，和公有资源类似，直接用任意的 HTTP 客户端就可以下载该资源了。唯一需要注意的是，在 downloadUrl 失效却还没有完成下载时，需要重新向服务器申请授权。</p>
+
+<p>无论公有资源还是私有资源，下载过程中客户端并不需要七牛 SDK 参与其中。</p>
+
+<p><a name="resumable-io-get"></a></p>
+
+<h4>断点续下载</h4>
+
+<p>无论是公有资源还是私有资源，获得的下载 url 支持标准的 HTTP 断点续传协议。考虑到多数语言都有相应的断点续下载支持的成熟方法，七牛 Python-SDK 并不提供断点续下载相关代码。</p>
+
+<p><a name="rs"></a></p>
+
+<h3>资源操作</h3>
+
+<!--TODO:资源操作介绍-->
+
+<p><a name="rs-stat"></a></p>
+
+<h4>获取文件信息</h4>
+
+<pre><code class="python">import qiniu.conf
+
+qiniu.conf.ACCESS_KEY = &quot;&lt;YOUR_APP_ACCESS_KEY&gt;&quot;
+qiniu.conf.SECRET_KEY = &quot;&lt;YOUR_APP_SECRET_KEY&gt;&quot;
+
+import qiniu.rs
+
+ret, err = qiniu.rs.Client().stat(bucket_name, key)
+if err is not None:
+    sys.stderr.write('error: %s ' % err)
+    return
+print ret,
+</code></pre>
+
+<p><a name="rs-copy"></a></p>
+
+<h4>复制文件</h4>
+
+<pre><code class="python">import qiniu.conf
+
+qiniu.conf.ACCESS_KEY = &quot;&lt;YOUR_APP_ACCESS_KEY&gt;&quot;
+qiniu.conf.SECRET_KEY = &quot;&lt;YOUR_APP_SECRET_KEY&gt;&quot;
+
+import qiniu.rs
+
+ret, err = qiniu.rs.Client().copy(bucket_name, key, bucket_name, key2)
+if err is not None:
+    sys.stderr.write('error: %s ' % err)
+    return
+</code></pre>
+
+<p><a name="rs-move"></a></p>
+
+<h4>移动文件</h4>
+
+<pre><code class="python">import qiniu.conf
+
+qiniu.conf.ACCESS_KEY = &quot;&lt;YOUR_APP_ACCESS_KEY&gt;&quot;
+qiniu.conf.SECRET_KEY = &quot;&lt;YOUR_APP_SECRET_KEY&gt;&quot;
+
+import qiniu.rs
+
+ret, err = qiniu.rs.Client().move(bucket_name, key2, bucket_name, key3)
+if err is not None:
+    sys.stderr.write('error: %s ' % err)
+    return
+</code></pre>
+
+<p><a name="rs-delete"></a></p>
+
+<h4>删除文件</h4>
+
+<pre><code class="python">import qiniu.conf
+
+qiniu.conf.ACCESS_KEY = &quot;&lt;YOUR_APP_ACCESS_KEY&gt;&quot;
+qiniu.conf.SECRET_KEY = &quot;&lt;YOUR_APP_SECRET_KEY&gt;&quot;
+
+import qiniu.rs
+
+ret, err = qiniu.rs.Client().delete(bucket_name, key3)
+if err is not None:
+    sys.stderr.write('error: %s ' % err)
+    return
+</code></pre>
+
+<p><a name="rs-batch"></a></p>
+
+<h4>批量操作</h4>
+
+<p>当您需要一次性进行多个操作时, 可以使用批量操作。</p>
+
+<p><a name="batch-stat"></a></p>
+
+<h5>批量获取文件信息</h5>
+
+<pre><code class="python">import qiniu.conf
+
+qiniu.conf.ACCESS_KEY = &quot;&lt;YOUR_APP_ACCESS_KEY&gt;&quot;
+qiniu.conf.SECRET_KEY = &quot;&lt;YOUR_APP_SECRET_KEY&gt;&quot;
+
+import qiniu.rs
+
+path_1 = qiniu.rs.EntryPath(bucket_name, key)
+path_2 = qiniu.rs.EntryPath(bucket_name, key2)
+path_3 = qiniu.rs.EntryPath(bucket_name, key3)
+
+rets, err = qiniu.rs.Client().batch_stat([path_1, path_2, path_3])
+if err is not None:
+    sys.stderr.write('error: %s ' % err)
+    return
+</code></pre>
+
+<p><a name="batch-copy"></a></p>
+
+<h5>批量复制文件</h5>
+
+<pre><code class="python">import qiniu.conf
+
+qiniu.conf.ACCESS_KEY = &quot;&lt;YOUR_APP_ACCESS_KEY&gt;&quot;
+qiniu.conf.SECRET_KEY = &quot;&lt;YOUR_APP_SECRET_KEY&gt;&quot;
+
+import qiniu.rs
+
+path_1 = qiniu.rs.EntryPath(bucket_name, key)
+path_2 = qiniu.rs.EntryPath(bucket_name, key2)
+path_3 = qiniu.rs.EntryPath(bucket_name, key3)
+
+pair_1 = qiniu.rs.EntryPathPair(path_1, path_3)
+rets, err = qiniu.rs.Client().batch_copy([pair_1])
+if not rets[0]['code'] == 200:
+    sys.stderr.write('error: %s ' % &quot;复制失败&quot;)
+    return
+</code></pre>
+
+<p><a name="batch-move"></a></p>
+
+<h5>批量移动文件</h5>
+
+<pre><code class="python">import qiniu.conf
+
+qiniu.conf.ACCESS_KEY = &quot;&lt;YOUR_APP_ACCESS_KEY&gt;&quot;
+qiniu.conf.SECRET_KEY = &quot;&lt;YOUR_APP_SECRET_KEY&gt;&quot;
+
+import qiniu.rs
+
+path_1 = qiniu.rs.EntryPath(bucket_name, key)
+path_2 = qiniu.rs.EntryPath(bucket_name, key2)
+path_3 = qiniu.rs.EntryPath(bucket_name, key3)
+
+pair_2 = qiniu.rs.EntryPathPair(path_3, path_2)
+rets, err = qiniu.rs.Client().batch_move([pair_2])
+if not rets[0]['code'] == 200:
+    sys.stderr.write('error: %s ' % &quot;移动失败&quot;)
+    return
+</code></pre>
+
+<p><a name="batch-delete"></a></p>
+
+<h5>批量删除文件</h5>
+
+<pre><code class="python">import qiniu.conf
+
+qiniu.conf.ACCESS_KEY = &quot;&lt;YOUR_APP_ACCESS_KEY&gt;&quot;
+qiniu.conf.SECRET_KEY = &quot;&lt;YOUR_APP_SECRET_KEY&gt;&quot;
+
+import qiniu.rs
+
+path_1 = qiniu.rs.EntryPath(bucket_name, key)
+path_2 = qiniu.rs.EntryPath(bucket_name, key2)
+path_3 = qiniu.rs.EntryPath(bucket_name, key3)
+
+rets, err = qiniu.rs.Client().batch_delete([path_1, path_2])
+if not [ret['code'] for ret in rets] == [200, 200]:
+    sys.stderr.write('error: %s ' % &quot;删除失败&quot;)
+    return
+</code></pre>
+
+<p><a name="rsf"></a></p>
+
+<h3>高级管理操作</h3>
+
+<p><a name="list-prefix"></a></p>
+
+<h4>列出文件</h4>
+
+<p>请求某个存储空间（bucket）下的文件列表，如果有前缀，可以按前缀（prefix）进行过滤；如果前一次返回marker就表示还有资源，下一步请求需要将marker参数填上。</p>
+
+<pre><code class="python">import qiniu.conf
+
+qiniu.conf.ACCESS_KEY = &quot;&lt;YOUR_APP_ACCESS_KEY&gt;&quot;
+qiniu.conf.SECRET_KEY = &quot;&lt;YOUR_APP_SECRET_KEY&gt;&quot;
+
+import qiniu.rsf
+
+rets, err = qiniu.rsf.Client().list_prefix(bucket_name, prefix=&quot;test&quot;, limit=2)
+if err is not None:
+    sys.stderr.write('error: %s ' % err)
+    return
+print rets
+
+# 从上一次list_prefix的位置继续列出文件
+rets2, err = qiniu.rsf.Client().list_prefix(bucket_name, prefix=&quot;test&quot;, limit=1, marker=rets['marker'])
+if err is not None:
+    sys.stderr.write('error: %s ' % err)
+    return
+print rets2
+</code></pre>
+
+<p>一个典型的对整个bucket遍历的操作为：</p>
+
+<pre><code class="python">def list_all(bucket, rs=None, prefix=None, limit=None):
+    if rs is None:
+        rs = qiniu.rsf.Client()
+    marker = None
+    err = None
+    while err is None:
+        ret, err = rs.list_prefix(bucket_name, prefix=prefix, limit=limit, marker=marker)
+        marker = ret.get('marker', None)
+        for item in ret['items']:
+            #do something
+            pass
+    if err is not qiniu.rsf.EOF:
+        # 错误处理
+        pass
+</code></pre>
+
+<p><a name="fop"></a></p>
+
+<h3>云处理</h3>
+
+<p><a name="fop-image"></a></p>
+
+<h4>图像</h4>
+
+<p><a name="fop-image-info"></a></p>
+
+<h5>查看图像属性</h5>
+
+<pre><code class="python">import qiniu.conf
+
+qiniu.conf.ACCESS_KEY = &quot;&lt;YOUR_APP_ACCESS_KEY&gt;&quot;
+qiniu.conf.SECRET_KEY = &quot;&lt;YOUR_APP_SECRET_KEY&gt;&quot;
+
+import qiniu.fop
+import qiniu.rs
+
+# 生成base_url
+url = qiniu.rs.make_base_url(domain, pic_key)
+
+# 生成fop_url
+image_info = qiniu.fop.ImageInfo()
+url = image_info.make_request(url)
+
+# 对其签名，生成private_url。如果是公有bucket此步可以省略
+policy = qiniu.rs.GetPolicy()
+url = policy.make_request(url)
+
+print '可以在浏览器浏览: %s' % url
+</code></pre>
+
+<p><a name="fop-exif"></a></p>
+
+<h5>查看图片EXIF信息</h5>
+
+<pre><code class="python">import qiniu.conf
+
+qiniu.conf.ACCESS_KEY = &quot;&lt;YOUR_APP_ACCESS_KEY&gt;&quot;
+qiniu.conf.SECRET_KEY = &quot;&lt;YOUR_APP_SECRET_KEY&gt;&quot;
+
+import qiniu.fop
+import qiniu.rs
+
+# 生成base_url
+url = qiniu.rs.make_base_url(domain, pic_key)
+
+# 生成fop_url
+image_exif = qiniu.fop.Exif()
+url = image_exif.make_request(url)
+
+# 对其签名，生成private_url。如果是公有bucket此步可以省略
+policy = qiniu.rs.GetPolicy()
+url = policy.make_request(url)
+
+print '可以在浏览器浏览: %s' % url
+</code></pre>
+
+<p><a name="fop-image-view"></a></p>
+
+<h5>生成图片预览</h5>
+
+<pre><code class="python">import qiniu.conf
+
+qiniu.conf.ACCESS_KEY = &quot;&lt;YOUR_APP_ACCESS_KEY&gt;&quot;
+qiniu.conf.SECRET_KEY = &quot;&lt;YOUR_APP_SECRET_KEY&gt;&quot;
+
+import qiniu.fop
+import qiniu.rs
+
+iv = qiniu.fop.ImageView()
+iv.width = 100
+
+# 生成base_url
+url = qiniu.rs.make_base_url(domain, pic_key)
+# 生成fop_url
+url = iv.make_request(url)
+# 对其签名，生成private_url。如果是公有bucket此步可以省略
+policy = qiniu.rs.GetPolicy()
+url = policy.make_request(url)
+print '可以在浏览器浏览: %s' % url
+</code></pre>
+
+<p><a name="contribution"></a></p>
+
+<h2>贡献代码</h2>
+
+<ul>
+<li>Fork</li>
+<li>创建您的特性分支 (git checkout -b my-new-feature)</li>
+<li>提交您的改动 (git commit -am &lsquo;Added some feature&rsquo;)</li>
+<li>将您的修改记录提交到远程 git 仓库 (git push origin my-new-feature)</li>
+<li>然后到 github 网站的该 git 远程仓库的 my-new-feature 分支下发起 Pull Request</li>
+</ul>
+
+<p><a name="license"></a></p>
+
+<h2>许可证</h2>
+
+<blockquote>
+<p>Copyright &copy; 2013 qiniu.com</p>
+</blockquote>
+
+<p>基于 MIT 协议发布:</p>
+
+<blockquote>
+<p><a href="http://www.opensource.org/licenses/MIT">www.opensource.org/licenses/MIT</a></p>
+</blockquote>
+
+				</article>
+			</div>
+
+			<div id="js-sidebar" class="sidebar-shell">
+				<div class="js-toggle-list sidebar-module expandable">
+					<ul>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">新手上路</span></h3>
+						<ul class="js-guides">
+							<li><a href="/guide/testing.html">测试指南</a></li>
+						</ul>
+						</li>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">API</span></h3>
+						<ul class="js-guides">
+							<li><a href="/api/put.html">上传</a></li>
+							<li><a href="/api/get.html">下载</a></li>
+							<li><a href="/api/file-handle.html">文件管理</a></li>
+							<li><a href="/api/image-process.html">图像处理</a></li>
+							<li><a href="/api/audio-video-hls-process.html">音频/视频/流媒体处理</a></li>
+							<li><a href="/api/qrcode.html">生成二维码 - QR code</a></li>
+							<li><a href="/api/markdown-convert.html">Markdown 转 HTML</a></li>
+							<li><a href="/api/pipeline.html">Pipeline API</a></li>
+						</ul>
+						</li>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">SDK</span></h3>
+						<ul class="js-guides">
+							<li><a href="/ios-sdk/index.html">Objective-C (iOS)</a></li>
+							<li><a href="/android-sdk/index.html">Java (Android)</a></li>
+							<li><a href="/java-sdk/index.html">Java</a></li>
+							<li><a href="/php-sdk/index.html">PHP</a></li>
+							<li><a href="/python-sdk/index.html">Python</a></li>
+							<li><a href="/ruby-sdk/index.html">Ruby</a></li>
+							<li><a href="/nodejs-sdk/index.html">Node.js</a></li>
+							<li><a href="/csharp-sdk/index.html">C#</a></li>
+							<li><a href="/c-sdk/index.html">C/C++</a></li>
+							<li><a href="/go-sdk/index.html">Go</a></li>
+							<li><a href="/perl-sdk/index.html">Perl</a></li>							
+						</ul>
+						</li>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">上传及开发调试工具</span></h3>
+						<ul class="js-guides">
+							<li><a href="/tools/qrsync.html">qrsync</a></li>
+							<li><a href="/tools/qboxrsctl.html">qboxrsctl</a></li>
+							<li><a href="/tools/qiniu-autosync.html">qiniu-autosync</a></li>
+						</ul>
+						</li>
+					</ul>
+				</div> <!-- /sidebar-module -->
+				<div class="sidebar-module">
+					<p>帮助联系: <a href="mailto:support@qiniu.com">support@qiniu.com</a></p>
+				</div>
+			</div><!-- /sidebar-shell -->
+
+		</div><!-- #wrapper -->
+
+		<div id="footer" >
+			<div class="lower_footer">
+				<div class="footer_inner clearfix">
+					<p>&copy; <span id="year">2012-2013</span> <a href="/">docs.qiniu.com</a>. All rights reserved. Powerd by <a href="http://www.qiniu.com" target="_blank">七牛云存储</a>. <a href="http://www.miibeian.gov.cn/" target="_blank">沪ICP备11037377号-2</a></p>
+				</div><!-- /.site -->
+			</div><!-- /.lower_footer -->
+		</div><!-- /#footer -->
+
+		<!-- <div class="popover fade top in"><div class="arrow"></div><h3 class="popover-title">Python SDK 使用指南</h3><div id="popover-content"></div></div> -->
+		<script src="/static/js/jquery.js" type="text/javascript"></script>
+		<script src="/static/js/qiniudoc.js" type="text/javascript"></script>
+		<script src="/static/js/jquery.scrollUp.min.js"></script>
+		<script type="text/javascript">
+			   //var sdkName = "Python SDK 使用指南"
+				 //$("#popover-content").html($("article ul")[0].outerHTML)
+				 (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+					(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+					m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+					})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+					ga('create', 'UA-40857860-3', 'qiniu.com');
+					ga('send', 'pageview');
+		 </script>
+	 </body>
+ </html>

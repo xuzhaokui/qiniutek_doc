@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="robots" content="all" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<meta name="description" content="七牛云存储API和SDK文档" />
+		<meta name="keywords" content="七牛, 七牛云存储, 七牛云存储API, 七牛云存储SDK, qrsync, qboxrsctl, QinuRS, S3" />
+		<meta name="author" content="qiniu.com" />
+		<meta name="copyright" content="qiniu.com" />
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<meta http-equiv="Content-Language" content="zh-cn" />
+		<meta http-equiv="imagetoolbar" content="false" />
+		<meta name="MSSmartTagsPreventParsing" content="true" />
+		<title>音频/视频/流媒体处理 | 七牛云存储</title>
+		<link rel="shortcut icon" href="/favicon.ico" type="image/gif" />
+		<link href="/static/css/reset.css" rel="stylesheet" type="text/css" />
+		<link href="/static/css/960.css" rel="stylesheet" type="text/css" />
+		<link href="/static/css/uv_active4d.css" rel="stylesheet" type="text/css" />
+		<link href="/static/css/documentation.css" media="screen" rel="stylesheet" type="text/css">
+	</head>
+	<body class="api">
+		<div id="header-wrapper">
+			<div id="header">
+				<div>
+					<a class="logo" href="/">七牛云存储</a>
+					<ul class="nav">
+						<li><a href="https://portal.qiniu.com">开发者平台</a></li>
+						<li><a href="http://www.qiniu.com">七牛官网</a></li>
+						<!-- <li><a href="/faq/FAQ.html">FAQ</a></li> -->
+					</ul>
+				</div>
+			</div><!-- #header -->
+		</div><!-- #header-wrapper -->
+
+		<div id="wrapper">
+			<div class="content">	
+				<h1>音频/视频/流媒体处理<span id="version">v6</span></h1>
+				<article>
+				<ul>
+<li><a href="#audio-convert">音频转换</a></li>
+<li><a href="#video-convert">视频转换</a></li>
+<li><a href="#video-thumbnail">视频帧缩略图</a></li>
+<li><a href="#hls">HTTP Live Streaming</a>
+
+<ul>
+<li><a href="#hls-usage">使用七牛提供的 HLS 服务</a></li>
+<li><a href="#hls-api">HTTP Live Streaming API</a></li>
+</ul></li>
+<li><a href="#args">音视频API参数详解</a></li>
+</ul>
+
+<p><a name="audio-convert"></a></p>
+
+<h2>音频转换</h2>
+
+<p><strong>请求</strong></p>
+
+<pre><code>[GET] &lt;AudioDownloadURL&gt;?avthumb/&lt;Format&gt;
+                         /ab/&lt;BitRate&gt;
+                         /aq/&lt;AudioQuality&gt;
+                         /ar/&lt;SamplingRate&gt;
+</code></pre>
+
+<p>参数释义参考: <a href="#args">音视频API参数详解</a></p>
+
+<p><strong>响应</strong></p>
+
+<pre><code>HTTP/1.1 200 OK
+Body: &lt;AudioBinaryData&gt;
+</code></pre>
+
+<p><a name="audio-convert-args"></a></p>
+
+<p><strong>示例</strong></p>
+
+<p>示例1：将 wav 音频格式转换为 mp3 格式：</p>
+
+<pre><code>[GET] http://apitest.qiniudn.com/sample.wav?avthumb/mp3
+</code></pre>
+
+<p>示例2：将 wav 音频格式转换为 mp3 格式，并指定比特率为 192k：</p>
+
+<pre><code>[GET] http://apitest.qiniudn.com/sample.wav?avthumb/mp3/ab/192k
+</code></pre>
+
+<p>示例3：将 wav 音频格式转换为 mp3 格式，并指定 VBR 参数为3，采样频率为44100：</p>
+
+<pre><code>[GET] http://apitest.qiniudn.com/sample.wav?avthumb/mp3/ar/44100/aq/3
+</code></pre>
+
+<p><strong>支持的格式</strong></p>
+
+<p>支持转换的音频格式详见：<a href="http://ffmpeg.org/general.html#Audio-Codecs">http://ffmpeg.org/general.html#Audio-Codecs</a></p>
+
+<p>支持的音频 Codec 有：libmp3lame，libfaac，libvorbis 。</p>
+
+<p><strong>优化建议</strong></p>
+
+<p>为了保证良好的用户体验，请配合上传预转机制使用。参考: <a href="#upload-fop">上传预转</a></p>
+
+<p><a name="video-convert"></a></p>
+
+<h2>视频转换</h2>
+
+<p><strong>请求</strong></p>
+
+<pre><code>[GET] &lt;VideoDownloadURL&gt;?avthumb/&lt;Format&gt;
+                         /r/&lt;FrameRate&gt;
+                         /vb/&lt;VideoBitRate&gt;
+                         /vcodec/&lt;VideoCodec&gt;
+                         /acodec/&lt;AudioCodec&gt;
+                         /ab/&lt;BitRate&gt;
+                         /aq/&lt;AudioQuality&gt;
+                         /ar/&lt;SamplingRate&gt;
+</code></pre>
+
+<p>参数释义参考: <a href="#args">音视频API参数详解</a></p>
+
+<p><strong>响应</strong></p>
+
+<pre><code>HTTP/1.1 200 OK
+Body: &lt;VideoBinaryData&gt;
+</code></pre>
+
+<p><strong>示例</strong></p>
+
+<p>示例1：将 mp4 视频格式转换为 flv 格式，帧率为 24，使用 x264 进行视频编码：</p>
+
+<pre><code>[GET] http://open.qiniudn.com/thinking-in-go.mp4?avthumb/flv/r/24/vcodec/libx264
+</code></pre>
+
+<p>示例2：将 mp4 视频格式转换为 avi 格式，使用 mp3 进行音频编码，且音频比特率为64k：</p>
+
+<pre><code>[GET] http://open.qiniudn.com/thinking-in-go.mp4?avthumb/avi/ab/64k/acodec/libmp3lame
+</code></pre>
+
+<p>示例3：将 mp4 视频格式转换为 flv 格式，帧率 30，视频比特率 256k，使用 x264 进行视频编码，音频采样频率 22050，音频比特率 64k，使用 mp3 进行音频编码：</p>
+
+<pre><code>[GET] http://open.qiniudn.com/thinking-in-go.mp4?avthumb/flv
+                                                 /r/30
+                                                 /vb/256k
+                                                 /vcodec/libx264
+                                                 /ar/22050
+                                                 /ab/64k
+                                                 /acodec/libmp3lame
+</code></pre>
+
+<p>示例4：将 mp4 视频格式转换为 ogv 格式，帧率 30，视频比特率 1800k，使用 libtheora 进行视频编码，音频采样频率 44100，音频比特率 128k，使用 libvorbis 进行音频编码：</p>
+
+<pre><code>[GET] http://open.qiniudn.com/thinking-in-go.mp4?avthumb/ogv
+                                                 /r/30
+                                                 /vb/1800k
+                                                 /vcodec/libtheora
+                                                 /ar/44100
+                                                 /ab/128k
+                                                 /acodec/libvorbis
+</code></pre>
+
+<p><strong>支持的格式</strong></p>
+
+<p>支持转换的视频格式详见：<a href="http://ffmpeg.org/general.html#File-Formats">http://ffmpeg.org/general.html#File-Formats</a></p>
+
+<p>支持的视频 Codec 有：libx264，libvpx，libtheora，libxvid 。</p>
+
+<p>支持的音频 Codec 有：libmp3lame，libfaac，libvorbis 。</p>
+
+<p><strong>优化建议</strong></p>
+
+<p>为了保证良好的用户体验，请配合上传预转机制使用。参考: <a href="#upload-fop">上传预转</a></p>
+
+<p><a name="video-thumbnail"></a></p>
+
+<h2>视频帧缩略图</h2>
+
+<p><strong>请求</strong></p>
+
+<pre><code>GET &lt;VideoDownloadURL&gt;?vframe/&lt;Format&gt;
+                       /offset/&lt;Second&gt;
+                       /w/&lt;Width&gt;
+                       /h/&lt;Height&gt;
+</code></pre>
+
+<p><strong>响应</strong></p>
+
+<pre><code>HTTP/1.1 200 OK
+Body: &lt;ImageBinaryData&gt;
+</code></pre>
+
+<p><strong>请求参数详解</strong></p>
+
+<table>
+<thead>
+<tr>
+<td>参数</td>
+<td>说明</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Format</td>
+<td>要输出的目标缩略图格式，支持 jpg，png</td>
+</tr>
+
+<tr>
+<td>Second</td>
+<td>取视频的第几秒</td>
+</tr>
+
+<tr>
+<td>Width</td>
+<td>缩略图宽度，范围为 1 ~ 1920</td>
+</tr>
+
+<tr>
+<td>Height</td>
+<td>缩略图高度，范围为 1 ~ 1080</td>
+</tr>
+</tbody>
+</table>
+
+<p><strong>示例</strong></p>
+
+<p>示例：取视频第 7 秒的截图，图片格式为 jpg，宽度为 480px，高度为 360px：</p>
+
+<pre><code>[GET] http://open.qiniudn.com/thinking-in-go.mp4?vframe/jpg
+                                                 /offset/7
+                                                 /w/480
+                                                 /h/360
+</code></pre>
+
+<p>上述示例效果如下：</p>
+
+<p><img src="http://open.qiniudn.com/thinking-in-go.mp4?vframe/jpg/offset/7/w/480/h/360" alt="Go——基于连接与组合的语言" />
+</p>
+
+<p><a name="hls"></a></p>
+
+<h2>HTTP Live Streaming</h2>
+
+<p>HTTP Live Streaming 是由 Apple 提出的基于 HTTP 的流媒体传输协议。
+它将一整个音视频流切割成可由 HTTP 下载的一个个小的音视频流，并生成一个播放列表（M3U8），客户端只需要获取资源的 M3U8 播放列表即可播放音视频。</p>
+
+<p>以下用 HLS 代指 HTTP Live Streaming 。</p>
+
+<p><a name="hls-usage"></a></p>
+
+<h3>使用七牛提供的 HLS 服务</h3>
+
+<p>HLS 必须使用友好风格的 URL，可以使用命令行工具 <code>qboxrsctl</code> 配置 HLS 友好风格。</p>
+
+<p>下载 <a href="/tools/qboxrsctl.html">qboxrsctl</a></p>
+
+<p>下载 qboxrsctl 之后，我们需要先了解该命令行工具的3个指令。</p>
+
+<p>注意:</p>
+
+<ul>
+<li>qboxrsctl 工具需在命令行模式下使用</li>
+<li>尖括号注明的参数是需要自行替换的内容</li>
+</ul>
+
+<p>指令1，登录授权:</p>
+
+<pre><code>qboxrsctl login &lt;注册邮箱&gt; &lt;登录密码&gt;
+</code></pre>
+
+<p>指令2，设置友好风格的 URL 分隔符:</p>
+
+<pre><code>qboxrsctl separator &lt;空间名称&gt; &lt;分隔符字符&gt;
+</code></pre>
+
+<p>指令3，设置 API 规格别名:</p>
+
+<pre><code>qboxrsctl style &lt;空间名称&gt; &lt;API规格别名&gt; &lt;API规格定义字符串&gt;
+</code></pre>
+
+<p>示例</p>
+
+<pre><code>// 设置分隔符为点号（“.”) 
+qboxrsctl separator &lt;空间名称&gt; .
+
+// 设置风格名为 m3u8_audio，代表音频的 HLS, 码率为32k
+qboxrsctl style &lt;空间名称&gt; m3u8_audio avthumb/m3u8/preset/audio_32k
+
+// 设置风格名为 m3u8_video，代表视频的 HLS, 长宽比为16x9，码率为150k
+qboxrsctl style &lt;空间名称&gt; m3u8_video avthumb/m3u8/preset/video_16x9_150k
+</code></pre>
+
+<p>已知文件上传到七牛后，下载方式如下:</p>
+
+<p>公有资源</p>
+
+<pre><code>[GET] http://&lt;Domain&gt;/&lt;Key&gt;
+</code></pre>
+
+<p>私有资源</p>
+
+<pre><code>[GET] http://&lt;Domain&gt;/&lt;Key&gt;?token=&lt;DownloadToken&gt;
+</code></pre>
+
+<p>上述示例设置完之后就可以用以下 URL 来访问 HLS 资源：</p>
+
+<pre><code>// 公有资源
+[GET] http://&lt;Domain&gt;/&lt;Key&gt;.m3u8_audio
+[GET] http://&lt;Domain&gt;/&lt;Key&gt;.m3u8_video
+
+// 私有资源（m3u8私有资源访问暂不支持）
+[GET] http://&lt;Domain&gt;/&lt;Key&gt;.m3u8_audio?token=&lt;DownloadToken&gt;
+[GET] http://&lt;Domain&gt;/&lt;Key&gt;.m3u8_video?token=&lt;DownloadToken&gt;
+
+HTTP/1.1 200 OK
+Content-Type: application/x-mpegurl
+Body: &lt;M3U8File&gt;
+</code></pre>
+
+<p><a name="upload-fop"></a></p>
+
+<p><strong>上传预转</strong></p>
+
+<p>由于在线音视频频转换或将音视频切割成多个小文件并生成 M3U8 播放列表是一个相对耗时的操作，为了保证良好的用户体验，需要配合上传预转机制使用。实际上，七牛官方推荐音视频在线编解码都通过上传预转的方式进行。</p>
+
+<p>上传预转参考文档：<a href="put.html#uploadToken-asyncOps">音视频上传预转 - asyncOps</a></p>
+
+<p>接上述示例，已知 <code>m3u8_audio</code> 的 API 规格定义，将其作为上传授权凭证（<code>uploadToken</code>）预转参数（<code>asyncOps</code>）的值即可。</p>
+
+<pre><code>asyncOps = &quot;http://example.qiniudn.com/$(key)?avthumb/m3u8/preset/audio_32k&quot;
+</code></pre>
+
+<p>可以设置多个预转指令，用分号“;”隔开即可:</p>
+
+<pre><code>asyncOps = &quot;http://example.qiniudn.com/$(key)?avthumb/m3u8/preset/audio_32k;
+            http://example.qiniudn.com/$(key)?avthumb/m3u8/preset/audio_48k&quot;
+</code></pre>
+
+<p>实际情况下，<code>example.qiniudn.com</code> 换成存储空间（bucket）绑定的域名即可。</p>
+
+<p>同样，视频预转的操作方式也一样。</p>
+
+<p>设置预转后，当文件上传完毕即可异步执行预转指令操作。第一次访问该资源时，就无需再转换了，访问到的即已经转换好的资源。</p>
+
+<p><a name="hls-api"></a></p>
+
+<h3>HTTP Live Streaming API</h3>
+
+<p>HLS API 规格支持两种形式：预设集和自定义两种。</p>
+
+<h4>预设集</h4>
+
+<pre><code>avthumb/m3u8/segtime/&lt;SegSeconds&gt;/preset/&lt;Preset&gt;
+</code></pre>
+
+<p>参数</p>
+
+<p><code>&lt;SegSeconds&gt;</code>：可选项，用于自定义每一小段音/视频流的播放时间长度（单位:秒），取值范围为: 10 - 60 （秒），缺省值为 10（秒）。该参数若不指定，整个 <code>segtime/&lt;SegSeconds&gt;</code> 部分都不必在所调用的 API 规格中出现。</p>
+
+<p><code>&lt;Preset&gt;</code>：为了方便使用，我们提供了一些常用的预设集（Preset）。如下：</p>
+
+<h5>音频预设集</h5>
+
+<table>
+<thead>
+<tr>
+<td>预设集</td>
+<td>说明</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>audio_32k</td>
+<td>码率为32k的音频</td>
+</tr>
+
+<tr>
+<td>audio_48k</td>
+<td>码率为48k的音频</td>
+</tr>
+
+<tr>
+<td>audio_64k</td>
+<td>码率为64k的音频</td>
+</tr>
+</tbody>
+</table>
+
+<h5>视频预设集</h5>
+
+<table>
+<thead>
+<tr>
+<td>预设集</td>
+<td>说明</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>video_16x9_150k</td>
+<td>码率为150K，长宽比为16x9，推荐在 3G 环境下使用</td>
+</tr>
+
+<tr>
+<td>video_16x9_240k</td>
+<td>码率为240K，长宽比为16x9，推荐在 3G 环境下使用</td>
+</tr>
+
+<tr>
+<td>video_16x9_440k</td>
+<td>码率为440K，长宽比为16x9，推荐在 WIFI 环境下使用</td>
+</tr>
+
+<tr>
+<td>video_16x9_640k</td>
+<td>码率为640K，长宽比为16x9，推荐在 WIFI 环境下使用</td>
+</tr>
+
+<tr>
+<td>video_4x3_150k</td>
+<td>码率为150K，长宽比为4x3，推荐在 3G 环境下使用</td>
+</tr>
+
+<tr>
+<td>video_4x3_240k</td>
+<td>码率为240K，长宽比为4x3，推荐在 3G 环境下使用</td>
+</tr>
+
+<tr>
+<td>video_4x3_440k</td>
+<td>码率为440K，长宽比为4x3，推荐在 WIFI 环境下使用</td>
+</tr>
+
+<tr>
+<td>video_4x3_640k</td>
+<td>码率为640K，长宽比为4x3，推荐在 WIFI 环境下使用</td>
+</tr>
+</tbody>
+</table>
+
+<h4>自定义</h4>
+
+<p>自定义 HLS 的 API 规格如下:</p>
+
+<pre><code>avthumb/m3u8/segtime/&lt;SegSeconds&gt;
+            /r/&lt;FrameRate&gt;
+            /vb/&lt;VideoBitRate&gt;
+            /vcodec/&lt;VideoCodec&gt;
+            /acodec/&lt;AudioCodec&gt;
+            /ab/&lt;BitRate&gt;
+            /aq/&lt;AudioQuality&gt;
+            /ar/&lt;SamplingRate&gt;
+</code></pre>
+
+<p>参数释义参考: <a href="#args">音视频API参数详解</a></p>
+
+<p><a name="args"></a></p>
+
+<h2>音视频API参数详解</h2>
+
+<table>
+<thead>
+<tr>
+<td>参数</td>
+<td>说明</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>&lt;Format&gt;</code></td>
+<td>要转换输出的目标音频（比如 mp3、aac、m4a）或视频格式（比如 avi、flv、mp4）。参考: <a href="http://ffmpeg.org/general.html#Supported-File-Formats_002c-Codecs-or-Features">支持转换的音/视频格式</a>。</td>
+</tr>
+
+<tr>
+<td><code>/ab/&lt;BitRate&gt;</code></td>
+<td>静态码率（CBR），单位：比特每秒（bit/s），常用码率：320k, 256k, 192k, 128k, 64k 等。</td>
+</tr>
+
+<tr>
+<td><code>/aq/&lt;AudioQuality&gt;</code></td>
+<td>动态码率（VBR），取值范围为 0 ~ 9，值越小，码率越高，不得和上面的静态码率 <code>&lt;BitRate&gt;</code>(CBR) 参数合用。</td>
+</tr>
+
+<tr>
+<td><code>/ar/&lt;SamplingRate&gt;</code></td>
+<td>音频采样频率，单位：赫兹（Hz），常用采样频率：44100，22050，12050，8000等。</td>
+</tr>
+
+<tr>
+<td><code>/r/&lt;FrameRate&gt;</code></td>
+<td>视频帧率，每秒显示的帧数，单位：赫兹（Hz），常用帧率：24，25，30 等，一般用默认值。</td>
+</tr>
+
+<tr>
+<td><code>/vb/&lt;VideoBitRate&gt;</code></td>
+<td>视频比特率，单位：比特每秒（bit/s），常用视频比特率：128k 1.25m 5m 等。</td>
+</tr>
+
+<tr>
+<td><code>/vcodec/&lt;VideoCodec&gt;</code></td>
+<td>视频编码方案，支持方案：libx264，libvpx，libtheora，libxvid。</td>
+</tr>
+
+<tr>
+<td><code>/acodec/&lt;AudioCodec&gt;</code></td>
+<td>音频编码方案，支持方案：libmp3lame，libfaac，libvorbis。</td>
+</tr>
+
+<tr>
+<td><code>/segtime/&lt;SegSeconds&gt;</code></td>
+<td>用于 HLS 自定义每一小段音/视频流的播放时间长度，取值范围为: 10 - 60 （秒），默认值为 10（单位:秒）。</td>
+</tr>
+</tbody>
+</table>
+
+<p>注意：以上参数若不指定参数值，参数及其值都不必在所调用的 API 规格中出现。</p>
+
+				</article>
+			</div>
+
+			<div id="js-sidebar" class="sidebar-shell">
+				<div class="js-toggle-list sidebar-module expandable">
+					<ul>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">新手上路</span></h3>
+						<ul class="js-guides">
+							<li><a href="/guide/testing.html">测试指南</a></li>
+						</ul>
+						</li>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">API</span></h3>
+						<ul class="js-guides">
+							<li><a href="/api/put.html">上传</a></li>
+							<li><a href="/api/get.html">下载</a></li>
+							<li><a href="/api/file-handle.html">文件管理</a></li>
+							<li><a href="/api/image-process.html">图像处理</a></li>
+							<li><a href="/api/audio-video-hls-process.html">音频/视频/流媒体处理</a></li>
+							<li><a href="/api/qrcode.html">生成二维码 - QR code</a></li>
+							<li><a href="/api/markdown-convert.html">Markdown 转 HTML</a></li>
+							<li><a href="/api/pipeline.html">Pipeline API</a></li>
+						</ul>
+						</li>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">SDK</span></h3>
+						<ul class="js-guides">
+							<li><a href="/ios-sdk/index.html">Objective-C (iOS)</a></li>
+							<li><a href="/android-sdk/index.html">Java (Android)</a></li>
+							<li><a href="/java-sdk/index.html">Java</a></li>
+							<li><a href="/php-sdk/index.html">PHP</a></li>
+							<li><a href="/python-sdk/index.html">Python</a></li>
+							<li><a href="/ruby-sdk/index.html">Ruby</a></li>
+							<li><a href="/nodejs-sdk/index.html">Node.js</a></li>
+							<li><a href="/csharp-sdk/index.html">C#</a></li>
+							<li><a href="/c-sdk/index.html">C/C++</a></li>
+							<li><a href="/go-sdk/index.html">Go</a></li>
+							<li><a href="/perl-sdk/index.html">Perl</a></li>							
+						</ul>
+						</li>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">上传及开发调试工具</span></h3>
+						<ul class="js-guides">
+							<li><a href="/tools/qrsync.html">qrsync</a></li>
+							<li><a href="/tools/qboxrsctl.html">qboxrsctl</a></li>
+							<li><a href="/tools/qiniu-autosync.html">qiniu-autosync</a></li>
+						</ul>
+						</li>
+					</ul>
+				</div> <!-- /sidebar-module -->
+				<div class="sidebar-module">
+					<p>帮助联系: <a href="mailto:support@qiniu.com">support@qiniu.com</a></p>
+				</div>
+			</div><!-- /sidebar-shell -->
+
+		</div><!-- #wrapper -->
+
+		<div id="footer" >
+			<div class="lower_footer">
+				<div class="footer_inner clearfix">
+					<p>&copy; <span id="year">2012-2013</span> <a href="/">docs.qiniu.com</a>. All rights reserved. Powerd by <a href="http://www.qiniu.com" target="_blank">七牛云存储</a>. <a href="http://www.miibeian.gov.cn/" target="_blank">沪ICP备11037377号-2</a></p>
+				</div><!-- /.site -->
+			</div><!-- /.lower_footer -->
+		</div><!-- /#footer -->
+
+		<!-- <div class="popover fade top in"><div class="arrow"></div><h3 class="popover-title">音频/视频/流媒体处理</h3><div id="popover-content"></div></div> -->
+		<script src="/static/js/jquery.js" type="text/javascript"></script>
+		<script src="/static/js/qiniudoc.js" type="text/javascript"></script>
+		<script src="/static/js/jquery.scrollUp.min.js"></script>
+		<script type="text/javascript">
+			   //var sdkName = "音频/视频/流媒体处理"
+				 //$("#popover-content").html($("article ul")[0].outerHTML)
+				 (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+					(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+					m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+					})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+					ga('create', 'UA-40857860-3', 'qiniu.com');
+					ga('send', 'pageview');
+		 </script>
+	 </body>
+ </html>

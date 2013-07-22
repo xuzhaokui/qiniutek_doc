@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="robots" content="all" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<meta name="description" content="七牛云存储API和SDK文档" />
+		<meta name="keywords" content="七牛, 七牛云存储, 七牛云存储API, 七牛云存储SDK, qrsync, qboxrsctl, QinuRS, S3" />
+		<meta name="author" content="qiniu.com" />
+		<meta name="copyright" content="qiniu.com" />
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<meta http-equiv="Content-Language" content="zh-cn" />
+		<meta http-equiv="imagetoolbar" content="false" />
+		<meta name="MSSmartTagsPreventParsing" content="true" />
+		<title>图像处理 | 七牛云存储</title>
+		<link rel="shortcut icon" href="/favicon.ico" type="image/gif" />
+		<link href="/static/css/reset.css" rel="stylesheet" type="text/css" />
+		<link href="/static/css/960.css" rel="stylesheet" type="text/css" />
+		<link href="/static/css/uv_active4d.css" rel="stylesheet" type="text/css" />
+		<link href="/static/css/documentation.css" media="screen" rel="stylesheet" type="text/css">
+	</head>
+	<body class="api">
+		<div id="header-wrapper">
+			<div id="header">
+				<div>
+					<a class="logo" href="/">七牛云存储</a>
+					<ul class="nav">
+						<li><a href="https://portal.qiniu.com">开发者平台</a></li>
+						<li><a href="http://www.qiniu.com">七牛官网</a></li>
+						<!-- <li><a href="/faq/FAQ.html">FAQ</a></li> -->
+					</ul>
+				</div>
+			</div><!-- #header -->
+		</div><!-- #header-wrapper -->
+
+		<div id="wrapper">
+			<div class="content">	
+				<h1>图像处理<span id="version">v6</span></h1>
+				<article>
+				<ul>
+<li><a href="#imageInfo">获取图片基本信息</a></li>
+<li><a href="#imageExif">获取图片EXIF信息</a></li>
+<li><a href="#imageView">生成指定规格的缩略图</a></li>
+<li><a href="#imageMogr">高级图像处理接口（缩略、裁剪、旋转、转化）</a></li>
+<li><a href="#watermark">图像水印接口</a></li>
+</ul>
+
+<p><a name="imageInfo"></a></p>
+
+<h2>获取图片基本信息</h2>
+
+<p><strong>请求</strong></p>
+
+<pre><code>GET &lt;ImageDownloadURL&gt;?imageInfo
+</code></pre>
+
+<p><strong>响应</strong></p>
+
+<pre><code>HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: no-store
+
+{
+    format: &lt;ImageType&gt; // &quot;png&quot;, &quot;jpeg&quot;, &quot;gif&quot;, &quot;bmp&quot;, etc.
+    width: &lt;ImageWidth&gt;
+    height: &lt;ImageHeight&gt;
+    colorModel: &lt;ImageColorModel&gt; // &quot;palette16&quot;, &quot;ycbcr&quot;, etc.
+}
+</code></pre>
+
+<p><a name="imageExif"></a></p>
+
+<h2>获取图片EXIF信息</h2>
+
+<p><strong>请求</strong></p>
+
+<pre><code>GET &lt;ImageDownloadURL&gt;?exif
+</code></pre>
+
+<p><strong>响应</strong></p>
+
+<pre><code>HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: no-store
+
+{
+    // ...EXIF Data...
+}
+</code></pre>
+
+<p><a name="imageView"></a></p>
+
+<h2>生成指定规格的缩略图</h2>
+
+<p><strong>请求</strong></p>
+
+<pre><code>[GET] &lt;ImageDownloadURL&gt;?imageView/&lt;mode&gt;
+                         /w/&lt;Width&gt;
+                         /h/&lt;Height&gt;
+                         /q/&lt;Quality&gt;
+                         /format/&lt;Format&gt;
+</code></pre>
+
+<p><strong>响应</strong></p>
+
+<pre><code>200 OK
+&lt;ImageBinaryData&gt;
+</code></pre>
+
+<p><strong>请求参数详解</strong></p>
+
+<table>
+<thead>
+<tr>
+<td>参数名称</td>
+<td>说明</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>&lt;mode&gt;</code></td>
+<td>图像缩略处理的模式</td>
+</tr>
+
+<tr>
+<td><code>&lt;Width&gt;</code></td>
+<td>指定目标缩略图的宽度，单位：像素（px）</td>
+</tr>
+
+<tr>
+<td><code>&lt;Height&gt;</code></td>
+<td>指定目标缩略图的高度，单位：像素（px）</td>
+</tr>
+
+<tr>
+<td><code>&lt;Quality&gt;</code></td>
+<td>指定目标缩略图的图像质量，取值范围 1-100</td>
+</tr>
+
+<tr>
+<td><code>&lt;Format&gt;</code></td>
+<td>指定目标缩略图的输出格式，取值范围：jpg, gif, png, webp 等图片格式</td>
+</tr>
+</tbody>
+</table>
+
+<p>其中 <code>&lt;mode&gt;</code> 分为如下几种情况：</p>
+
+<table>
+<thead>
+<tr>
+<td>模式</td>
+<td>说明</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>&lt;mode&gt;=1</code></td>
+<td>表示限定目标缩略图的宽度和高度，放大并从缩略图中央处裁剪为指定 <code>&lt;Width&gt;x&lt;Height&gt;</code> 大小的图片。</td>
+</tr>
+
+<tr>
+<td><code>&lt;mode&gt;=2</code></td>
+<td>指定 <code>&lt;Width&gt;</code> 和 <code>&lt;Height&gt;</code>，表示限定目标缩略图的长和宽，将缩略图的大小限定在指定的宽高矩形内。</td>
+</tr>
+
+<tr>
+<td><code>&lt;mode&gt;=2</code></td>
+<td>指定 <code>&lt;Width&gt;</code> 但不指定 <code>&lt;Height&gt;</code>，表示限定目标缩略图的宽度，高度等比缩略自适应。</td>
+</tr>
+
+<tr>
+<td><code>&lt;mode&gt;=2</code></td>
+<td>指定 <code>&lt;Height&gt;</code> 但不指定 <code>&lt;Width&gt;</code>，表示限定目标缩略图的高度，宽度等比缩略自适应。</td>
+</tr>
+</tbody>
+</table>
+
+<p><strong>示例</strong></p>
+
+<p>示例1：针对原图进行缩略，并从缩略图的中央部位裁剪为 200x200 的缩略图：</p>
+
+<pre><code>http://qiniuphotos.qiniudn.com/gogopher.jpg?imageView/1/w/200/h/200
+</code></pre>
+
+<p><img src="http://qiniuphotos.qiniudn.com/gogopher.jpg?imageView/1/w/200/h/200" alt="200x200" />
+</p>
+
+<p>示例2：针对原图进行缩略，并限定目标缩略图的长边为 200 px，短边自适应，缩略图宽和高都不会超出 200px：</p>
+
+<pre><code>http://qiniuphotos.qiniudn.com/gogopher.jpg?imageView/2/w/200/h/200
+</code></pre>
+
+<p><img src="http://qiniuphotos.qiniudn.com/gogopher.jpg?imageView/2/w/200/h/200" alt="限定长边为 200px，短边自适应，宽和高都不会超出 200px" />
+</p>
+
+<p>示例3：针对原图进行缩略，并限定目标缩略图的宽度为 200px，高度等比缩略自适应：</p>
+
+<pre><code>http://qiniuphotos.qiniudn.com/gogopher.jpg?imageView/2/w/200
+</code></pre>
+
+<p><img src="http://qiniuphotos.qiniudn.com/gogopher.jpg?imageView/2/w/200" alt="限定宽度为 200px, 高度等比缩略自适应" />
+</p>
+
+<p>示例4：针对原图进行缩略，并限定目标缩略图的高度为 200px，宽度等比缩略自适应：</p>
+
+<pre><code>http://qiniuphotos.qiniudn.com/gogopher.jpg?imageView/2/h/200
+</code></pre>
+
+<p><img src="http://qiniuphotos.qiniudn.com/gogopher.jpg?imageView/2/h/200" alt="限定高度为 200px, 宽度等比缩略自适应" />
+</p>
+
+<p><a name="imageMogr"></a></p>
+
+<h2>高级图像处理接口（第二版）（缩略、裁剪、旋转、转化）</h2>
+
+<p>除了对图像进行缩略有单独的处理接口，七牛云存储还提供了比较高级的图像处理接口，包含缩略、裁剪、旋转等一系列的功能，imageMogr第二版的接口规格如下：</p>
+
+<p><strong>请求</strong></p>
+
+<pre><code>[GET] &lt;ImageDownloadURL&gt;?imageMogr/v2
+      /auto-orient
+      /thumbnail/&lt;ImageSizeGeometry&gt;
+      /gravity/&lt;GravityType&gt;
+      /crop/&lt;ImageSizeAndOffsetGeometry&gt;
+      /quality/&lt;ImageQuality&gt;
+      /rotate/&lt;RotateDegree&gt;
+      /format/&lt;DestinationImageFormat&gt;
+</code></pre>
+
+<p><strong>响应</strong></p>
+
+<pre><code>200 OK
+&lt;ImageBinaryData&gt;
+</code></pre>
+
+<p><strong>参数</strong></p>
+
+<table>
+<thead>
+<tr>
+<td>名称</td>
+<td>必填</td>
+<td>说明</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>&lt;ImageSizeGeometry&gt;</code></td>
+<td>否</td>
+<td>缩略图大小，详解见下。</td>
+</tr>
+
+<tr>
+<td><code>&lt;GravityType&gt;</code></td>
+<td>否</td>
+<td>位置偏移，只会使其后的裁剪偏移({offset})受到影响。默认值为 <code>NorthWest</code>（左上角）。可选值：<code>NorthWest</code>, <code>North</code>, <code>NorthEast</code>, <code>West</code>, <code>Center</code>, <code>East</code>, <code>SouthWest</code>, <code>South</code>, <code>SouthEast</code> 。</td>
+</tr>
+
+<tr>
+<td><code>&lt;ImageSizeAndOffsetGeometry&gt;</code></td>
+<td>否</td>
+<td>裁剪大小和偏移，详解见下。</td>
+</tr>
+
+<tr>
+<td><code>&lt;ImageQuality&gt;</code></td>
+<td>否</td>
+<td>图片质量，取值范围是[1, 100]。</td>
+</tr>
+
+<tr>
+<td><code>&lt;RotateDegree&gt;</code></td>
+<td>否</td>
+<td>旋转角度。</td>
+</tr>
+
+<tr>
+<td><code>&lt;DestinationImageFormat&gt;</code></td>
+<td>否</td>
+<td>输出格式，可选为jpg, gif, png, bmp, tiff, webp等。</td>
+</tr>
+</tbody>
+</table>
+
+<p>如下是 <code>/thumbnail/&lt;ImageSizeGeometry&gt;</code> 和 <code>/crop/&lt;ImageSizeAndOffsetGeometry&gt;</code> 参数规格详解。</p>
+
+<p>指定图片缩略或裁剪后的尺寸：</p>
+
+<table>
+<thead>
+<tr>
+<td>size</td>
+<td>规格说明</td>
+<td>样例</td>
+<td>取值范围</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>scale%</td>
+<td>基于原图大小，按照指定的百分比进行缩放。</td>
+<td><a href="http://qiniuphotos.qiniudn.com/gogopher.jpg?imageMogr/v2/thumbnail/!50p">50%</a></td>
+<td>(0, 1000)</td>
+</tr>
+
+<tr>
+<td>scale-x%xscale-y%</td>
+<td>以百分比的形式指定缩略图的宽或高，另一边自适应等比缩放，只能使用一个 % 限定。</td>
+<td><a href="http://qiniuphotos.qiniudn.com/gogopher.jpg?imageMogr/v2/thumbnail/!50p">50%x</a> <a href="http://qiniuphotos.qiniudn.com/gogopher.jpg?imageMogr/v2/thumbnail/!x50p">x50%</a></td>
+<td>(0, 1000)</td>
+</tr>
+
+<tr>
+<td>width</td>
+<td>限定缩略图宽度，高度等比自适应。</td>
+<td><a href="http://qiniuphotos.qiniudn.com/gogopher.jpg?imageMogr/v2/thumbnail/200">200</a></td>
+<td>(0, 10000)</td>
+</tr>
+
+<tr>
+<td>xheight</td>
+<td>限定缩略图高度，宽度等比自适应。</td>
+<td><a href="http://qiniuphotos.qiniudn.com/gogopher.jpg?imageMogr/v2/thumbnail/x100">x100</a></td>
+<td>(0, 10000)</td>
+</tr>
+
+<tr>
+<td>widthxheight</td>
+<td>限定长边，短边自适应，将缩略图的大小限定在指定的宽高矩形内。若指定的宽度大于指定的高度，以指定的高度为基准，宽度自适应等比缩放；若指定的宽度小于指定的高度，以指定的宽度为基准，高度自适应等比缩放。</td>
+<td><a href="http://qiniuphotos.qiniudn.com/gogopher.jpg?imageMogr/v2/thumbnail/100x200">100x200</a> <a href="http://qiniuphotos.qiniudn.com/gogopher.jpg?imageMogr/v2/thumbnail/200x100">200x100</a></td>
+<td>(0, 10000)</td>
+</tr>
+
+<tr>
+<td>widthxheight^</td>
+<td>限定短边，长边自适应，目标缩略图大小会超出指定的宽高矩形。若指定的宽度大于指定的高度，以指定的宽度为基准，高度自适应等比缩放；若指定的宽度小于指定的高度，以指定的高度为基准，宽度自适应等比缩放。</td>
+<td><a href="http://qiniuphotos.qiniudn.com/gogopher.jpg?imageMogr/v2/thumbnail/100x200^">100x200^</a> <a href="http://qiniuphotos.qiniudn.com/gogopher.jpg?imageMogr/v2/thumbnail/200x100^">200x100^</a></td>
+<td>(0, 10000)</td>
+</tr>
+
+<tr>
+<td>widthxheight!</td>
+<td>限定缩略图宽和高。缩略图按照指定的宽和高强行缩略，忽略原图宽和高的比例，可能会变形。</td>
+<td><a href="http://qiniuphotos.qiniudn.com/gogopher.jpg?imageMogr/v2/thumbnail/100x200!">100x200!</a> <a href="http://qiniuphotos.qiniudn.com/gogopher.jpg?imageMogr/v2/thumbnail/200x100!">200x100!</a></td>
+<td>(0, 10000)</td>
+</tr>
+
+<tr>
+<td>widthxheight&gt;</td>
+<td>当原图尺寸超出给定的宽度或高度时，按照给定的 widthxheight 规格进行缩略。</td>
+<td><a href="http://qiniuphotos.qiniudn.com/gogopher.jpg?imageMogr/v2/thumbnail/100x200%3E">100x200&gt;</a> <a href="http://qiniuphotos.qiniudn.com/gogopher.jpg?imageMogr/v2/thumbnail/1000x2000%3E">1000x2000&gt;</a></td>
+<td>(0, 10000)</td>
+</tr>
+
+<tr>
+<td>widthxheight&lt;</td>
+<td>当原图尺寸低于给定的宽度和高度时，按照给定的 widthxheight 规格进行拉伸。</td>
+<td><a href="http://qiniuphotos.qiniudn.com/gogopher.jpg?imageMogr/v2/thumbnail/200x100&lt;">100x200&lt;</a> <a href="http://qiniuphotos.qiniudn.com/gogopher.jpg?imageMogr/v2/thumbnail/2000x1000&lt;">1000x2000&lt;</a></td>
+<td>(0, 10000)</td>
+</tr>
+
+<tr>
+<td>area@</td>
+<td>缩略图按原始图片高宽比例等比缩放，但缩放后的宽乘高的总分辨率不超过给定的总像素。</td>
+<td><a href="http://qiniuphotos.qiniudn.com/gogopher.jpg?imageMogr/v2/thumbnail/20000@">20000@</a></td>
+<td>(1, 1E8)</td>
+</tr>
+</tbody>
+</table>
+
+<p>指定图片缩略或裁剪前相对于原图的起始坐标：</p>
+
+<table>
+<thead>
+<tr>
+<td>{size}{offset}</td>
+<td>指定偏移量 (缺省是 +0+0)，{size} 代表上述表格中的任意规格</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>{size}{+-}x{+-}y</td>
+<td>指定子图片相对于源图片的坐标，x代表横轴，y代表纵轴，单位像素。偏移量会且仅会受<strong>之前的</strong> gravity 参数的影响，不受 {size} 操作符比如 % 的影响。</td>
+</tr>
+</tbody>
+</table>
+
+<p>x 为正数时为从源图区域左上角的横坐标，为负数时，左上角坐标为0，然后从截出的子图片右边减去x象素宽度。
+y 为正数时为从源图区域左上角的纵坐标，为负数时，左上角坐标为0，然后从截出的子图片上边减去y象素高度。</p>
+
+<p>例如，</p>
+
+<p><code>/crop/!300x400a10a10</code> 表示从源图坐标为 x:10 y:10 截取 300x400 的子图片。
+<code>/crop/!300x400-10a10</code> 表示从源图坐标为 x:0  y:10 截取 290x400 的子图片。</p>
+
+<p><strong>注意</strong></p>
+
+<ul>
+<li><code>auto-orient</code> 参数是和图像处理顺序相关的，一般建议放在首位（根据原图EXIF信息自动旋正）。</li>
+<li><code>thumbnail</code> 和 <code>crop</code> 之间的操作可以链式处理，即可以先对图进行缩略再裁剪，或者先裁剪再缩略。</li>
+<li><code>gravity</code> 只会使其后的裁剪偏移({offset})受到影响，建议放在<code>crop</code>选项之前。</li>
+<li>当处理多帧gif图片时，可能处理所需的时间较长并且输出的图片体积较大。如果您有许多多帧gif图片需要处理，可在图片上传完成后异步进行预转，这样不必在初次访问时进行图片处理，访问速度更快。
+
+<ul>
+<li>参考 <a href="put.html#uploadToken-asyncOps">uploadToken 之 asyncOps</a> 。</li>
+</ul></li>
+<li>第一版的<code>imageMogr</code>对gif图片仅反回原图，不做处理，</li>
+</ul>
+
+<p>第一版的<code>imageMogr</code>规格是：</p>
+
+<pre><code>[GET] &lt;ImageDownloadURL&gt;?imageMogr
+      /auto-orient
+      /thumbnail/&lt;ImageSizeGeometry&gt;
+      /gravity/&lt;GravityType&gt;
+      /crop/&lt;ImageSizeAndOffsetGeometry&gt;
+      /quality/&lt;ImageQuality&gt;
+      /rotate/&lt;RotateDegree&gt;
+      /format/&lt;DestinationImageFormat&gt;
+</code></pre>
+
+<p>第一版的imageMogr兼容保留。</p>
+
+<p><strong>转义</strong></p>
+
+<p>部分参数以 ! 开头，这是参数被转义的标识。为了方便阅读，我们采用了特殊的转义方法。以下是转义符号列表：</p>
+
+<pre><code>p =&gt; % (percent)
+r =&gt; ^ (reverse)
+a =&gt; + (add)
+</code></pre>
+
+<p>也就是 !50x50r 其实代表 50x50^ 这样一个字符串。!50x50 代表 50x50 这样一个字符串（实际上这个字符串不需要转义）。<code>&lt;ImageSizeAndOffsetGeometry&gt;</code> 中的 OffsetGeometry 部分可以省略，缺省为 +0+0。也就是 /crop/50x50 等价于 /crop/!50x50a0a0，执行 -crop 50x50+0+0 语义。</p>
+
+<p><strong>示例</strong></p>
+
+<pre><code>[GET] http://qiniuphotos.qiniudn.com/gogopher.jpg?imageMogr/v2
+            /auto-orient
+            /thumbnail/!256x256r
+            /gravity/center
+            /crop/!256x256
+            /quality/80
+            /rotate/45
+</code></pre>
+
+<p><img src="http://qiniuphotos.qiniudn.com/gogopher.jpg?imageMogr/v2/auto-orient/thumbnail/!256x256r/gravity/center/crop/!256x256/quality/80/rotate/45" alt="高级图像处理" />
+</p>
+
+<p><a name="watermark"></a></p>
+
+<h2>图像水印接口</h2>
+
+<p><strong>请求</strong></p>
+
+<pre><code>[GET] &lt;ImageDownloadURL&gt;?watermark/&lt;Mode&gt;/xxx
+</code></pre>
+
+<p>其中，<code>&lt;ImageDownloadURL&gt;</code> 必须返回一张图片。</p>
+
+<p><code>&lt;Mode&gt;</code> = 1 时，表示图片水印：</p>
+
+<pre><code>[GET] &lt;ImageDownloadURL&gt;?watermark/1
+                         /image/&lt;EncodedImageURL&gt;
+                         /dissolve/&lt;Dissolve&gt;
+                         /gravity/&lt;Gravity&gt;
+                         /dx/&lt;DistanceX&gt;
+                         /dy/&lt;DistanceY&gt;
+</code></pre>
+
+<p><code>&lt;Mode&gt;</code> = 2 时，表示纯文本水印：</p>
+
+<pre><code>[GET] &lt;ImageDownloadURL&gt;?watermark/2
+                         /text/&lt;EncodedText&gt;
+                         /font/&lt;EncodedFontName&gt;
+                         /fontsize/&lt;FontSize&gt;
+                         /fill/&lt;EncodedTextColor&gt;
+                         /dissolve/&lt;Dissolve&gt;
+                         /gravity/&lt;Gravity&gt;
+                         /dx/&lt;DistanceX&gt;
+                         /dy/&lt;DistanceY&gt;
+</code></pre>
+
+<p><strong>参数</strong></p>
+
+<table>
+<thead>
+<tr>
+<td>名称</td>
+<td>必填</td>
+<td>说明</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>&lt;EncodedImageURL&gt;</code></td>
+<td>是</td>
+<td>水印图片，使用图片水印时需指定用于水印的远程图片URL。<code>EncodedImageURL = urlsafe_base64_encode(ImageURL)</code></td>
+</tr>
+
+<tr>
+<td><code>&lt;EncodedText&gt;</code></td>
+<td>是</td>
+<td>水印文本，文字水印时必须。<code>EncodedText = urlsafe_base64_encode(Text)</code></td>
+</tr>
+
+<tr>
+<td><code>&lt;EncodedFontName&gt;</code></td>
+<td>否</td>
+<td>字体名，若水印文本为非英文字符（比如中文）构成，则必须。<code>EncodedFontName = urlsafe_base64_encode(FontName)</code></td>
+</tr>
+
+<tr>
+<td><code>&lt;FontSize&gt;</code></td>
+<td>否</td>
+<td>字体大小，0 表示默认，单位: 缇，等于 <sup>1</sup>&frasl;<sub>20</sub> 磅。</td>
+</tr>
+
+<tr>
+<td><code>&lt;EncodedTextColor&gt;</code></td>
+<td>否</td>
+<td>字体颜色。<code>EncodedTextColor = urlsafe_base64_encode(TextColor)</code>。RGB格式，可以是颜色名称（比如 <code>red</code>）或十六进制（比如 <code>#FF0000</code>），参考 <a href="http://www.rapidtables.com/web/color/RGB_Color.htm">RGB颜色编码表</a></td>
+</tr>
+
+<tr>
+<td><code>&lt;Dissolve&gt;</code></td>
+<td>否</td>
+<td>透明度，取值范围 1-100，默认值 <code>100</code>，即表示 100%（不透明）。</td>
+</tr>
+
+<tr>
+<td><code>&lt;Gravity&gt;</code></td>
+<td>否</td>
+<td>位置，默认值为 <code>SouthEast</code>（右下角）。可选值：<code>NorthWest</code>, <code>North</code>, <code>NorthEast</code>, <code>West</code>, <code>Center</code>, <code>East</code>, <code>SouthWest</code>, <code>South</code>, <code>SouthEast</code> 。</td>
+</tr>
+
+<tr>
+<td><code>&lt;DistanceX&gt;</code></td>
+<td>否</td>
+<td>横向边距，单位：像素（px），默认值为 10。</td>
+</tr>
+
+<tr>
+<td><code>&lt;DistanceY&gt;</code></td>
+<td>否</td>
+<td>纵向边距，单位：像素（px），默认值为 10。</td>
+</tr>
+</tbody>
+</table>
+
+<p><code>urlsafe_base64_encode(string)</code> 函数的实现符合 <a href="http://www.ietf.org/rfc/rfc4648.txt">RFC 4648</a> 标准，开发者可以参考 <a href="https://github.com/qiniu">https://github.com/qiniu</a> 上各SDK的样例代码。</p>
+
+<p><strong>示例</strong></p>
+
+<p>图片水印样例</p>
+
+<ul>
+<li>水印图片: <a href="http://www.b1.qiniudn.com/images/logo-2.png">http://www.b1.qiniudn.com/images/logo-2.png</a>
+
+<ul>
+<li><code>ImageURL = &quot;http://www.b1.qiniudn.com/images/logo-2.png&quot;</code></li>
+<li><code>EncodedImageURL = urlsafe_base64_encode(ImageURL)</code></li>
+</ul></li>
+<li>水印透明度: 50% (<code>dissolve=50</code>)</li>
+<li>水印位置: 右下角 (<code>gravity=SouthEast</code>)</li>
+<li>横向边距: 20px</li>
+<li>纵向边距: 20px</li>
+</ul>
+
+<p><img src="http://qiniuphotos.qiniudn.com/gogopher.jpg?watermark/1/image/aHR0cDovL3d3dy5iMS5xaW5pdWRuLmNvbS9pbWFnZXMvbG9nby0yLnBuZw==/dissolve/50/gravity/SouthEast/dx/20/dy/20" alt="图片水印" />
+</p>
+
+<p>右键获取以上图片获得链接可以查看水印生成的具体规格参数。</p>
+
+<p>文字水印样例</p>
+
+<ul>
+<li>水印文本：<code>七牛云存储</code></li>
+<li>水印文本字体：<code>宋体</code></li>
+<li>水印文本字体大小：<code>1000</code></li>
+<li>水印文本颜色：<code>white</code></li>
+<li>水印文本透明度：15% (<code>dissolve=85</code>)</li>
+<li>水印文本位置：右下脚 (<code>gravity=SouthEast</code>)</li>
+</ul>
+
+<p><img src="http://qiniuphotos.qiniudn.com/gogopher.jpg?watermark/2/text/5LiD54mb5LqR5a2Y5YKo/font/5a6L5L2T/fontsize/1000/fill/d2hpdGU=/dissolve/85/gravity/SouthEast/dx/20/dy/20" alt="文字水印" />
+</p>
+
+<p>右键获取以上图片获得链接可以查看水印生成的具体规格参数。</p>
+
+<p><strong>优化建议</strong></p>
+
+<ul>
+<li><p>1.图片上传完毕后，可异步进行水印预转，这样不必在初次访问时进行水印处理，访问速度更快。</p>
+
+<ul>
+<li>参考 <a href="put.html#uploadToken-asyncOps">uploadToken 之 asyncOps</a> 。</li>
+</ul></li>
+
+<li><p>2.给图片链接中的水印规格添加别名，使得URL更加友好。</p>
+
+<ul>
+<li>设置别名，可使用 <a href="/tools/qboxrsctl.html#style">qboxrsctl style 命令</a></li>
+<li>查看别名规格，可使用 <a href="/tools/qboxrsctl.html#bucketinfo">qboxrsctl bucketinfo 命令</a></li>
+</ul></li>
+</ul>
+
+<p>示例</p>
+
+<pre><code>qboxrsctl login &lt;email&gt; &lt;password&gt;
+
+qboxrsctl style &lt;bucket&gt; watermarked.jpg watermark/2/text/&lt;EncodedText&gt;
+
+qboxrsctl separator &lt;bucket&gt; -
+</code></pre>
+
+<p>此时，如下两个 URL 等价:</p>
+
+<pre><code>http://&lt;Domain&gt;/&lt;Key&gt;?watermark/2/text/&lt;EncodedText&gt;
+
+http://&lt;Domain&gt;/&lt;Key&gt;-watermarked.jpg
+</code></pre>
+
+<ul>
+<li>3.设置原图保护，仅限使用缩略图样式别名的友好URL形式来访问目标图片。
+
+<ul>
+<li>设置原图保护，可使用 <a href="/tools/qboxrsctl.html#protected">qboxrsctl protected 命令</a></li>
+<li>也可在 <a href="http://www.qiniu.com/">http://www.qiniu.com/</a>  上进行可视觉化操作。</li>
+</ul></li>
+</ul>
+
+<p>设置原图保护后，原图不能访问：</p>
+
+<pre><code>http://&lt;Domain&gt;/&lt;Key&gt;
+</code></pre>
+
+<p>同时也禁止根据图像处理API对原图进行参数枚举：</p>
+
+<pre><code>http://&lt;Domain&gt;/&lt;Key&gt;?watermark/2/text/&lt;EncodedText&gt;
+</code></pre>
+
+<p>此时只能访问指定规格的图片资源：</p>
+
+<pre><code>http://&lt;Domain&gt;/&lt;Key&gt;-watermarked.jpg
+</code></pre>
+
+				</article>
+			</div>
+
+			<div id="js-sidebar" class="sidebar-shell">
+				<div class="js-toggle-list sidebar-module expandable">
+					<ul>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">新手上路</span></h3>
+						<ul class="js-guides">
+							<li><a href="/guide/testing.html">测试指南</a></li>
+						</ul>
+						</li>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">API</span></h3>
+						<ul class="js-guides">
+							<li><a href="/api/put.html">上传</a></li>
+							<li><a href="/api/get.html">下载</a></li>
+							<li><a href="/api/file-handle.html">文件管理</a></li>
+							<li><a href="/api/image-process.html">图像处理</a></li>
+							<li><a href="/api/audio-video-hls-process.html">音频/视频/流媒体处理</a></li>
+							<li><a href="/api/qrcode.html">生成二维码 - QR code</a></li>
+							<li><a href="/api/markdown-convert.html">Markdown 转 HTML</a></li>
+							<li><a href="/api/pipeline.html">Pipeline API</a></li>
+						</ul>
+						</li>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">SDK</span></h3>
+						<ul class="js-guides">
+							<li><a href="/ios-sdk/index.html">Objective-C (iOS)</a></li>
+							<li><a href="/android-sdk/index.html">Java (Android)</a></li>
+							<li><a href="/java-sdk/index.html">Java</a></li>
+							<li><a href="/php-sdk/index.html">PHP</a></li>
+							<li><a href="/python-sdk/index.html">Python</a></li>
+							<li><a href="/ruby-sdk/index.html">Ruby</a></li>
+							<li><a href="/nodejs-sdk/index.html">Node.js</a></li>
+							<li><a href="/csharp-sdk/index.html">C#</a></li>
+							<li><a href="/c-sdk/index.html">C/C++</a></li>
+							<li><a href="/go-sdk/index.html">Go</a></li>
+							<li><a href="/perl-sdk/index.html">Perl</a></li>							
+						</ul>
+						</li>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">上传及开发调试工具</span></h3>
+						<ul class="js-guides">
+							<li><a href="/tools/qrsync.html">qrsync</a></li>
+							<li><a href="/tools/qboxrsctl.html">qboxrsctl</a></li>
+							<li><a href="/tools/qiniu-autosync.html">qiniu-autosync</a></li>
+						</ul>
+						</li>
+					</ul>
+				</div> <!-- /sidebar-module -->
+				<div class="sidebar-module">
+					<p>帮助联系: <a href="mailto:support@qiniu.com">support@qiniu.com</a></p>
+				</div>
+			</div><!-- /sidebar-shell -->
+
+		</div><!-- #wrapper -->
+
+		<div id="footer" >
+			<div class="lower_footer">
+				<div class="footer_inner clearfix">
+					<p>&copy; <span id="year">2012-2013</span> <a href="/">docs.qiniu.com</a>. All rights reserved. Powerd by <a href="http://www.qiniu.com" target="_blank">七牛云存储</a>. <a href="http://www.miibeian.gov.cn/" target="_blank">沪ICP备11037377号-2</a></p>
+				</div><!-- /.site -->
+			</div><!-- /.lower_footer -->
+		</div><!-- /#footer -->
+
+		<!-- <div class="popover fade top in"><div class="arrow"></div><h3 class="popover-title">图像处理</h3><div id="popover-content"></div></div> -->
+		<script src="/static/js/jquery.js" type="text/javascript"></script>
+		<script src="/static/js/qiniudoc.js" type="text/javascript"></script>
+		<script src="/static/js/jquery.scrollUp.min.js"></script>
+		<script type="text/javascript">
+			   //var sdkName = "图像处理"
+				 //$("#popover-content").html($("article ul")[0].outerHTML)
+				 (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+					(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+					m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+					})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+					ga('create', 'UA-40857860-3', 'qiniu.com');
+					ga('send', 'pageview');
+		 </script>
+	 </body>
+ </html>

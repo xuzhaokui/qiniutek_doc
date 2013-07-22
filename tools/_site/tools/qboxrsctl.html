@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="robots" content="all" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<meta name="description" content="七牛云存储API和SDK文档" />
+		<meta name="keywords" content="七牛, 七牛云存储, 七牛云存储API, 七牛云存储SDK, qrsync, qboxrsctl, QinuRS, S3" />
+		<meta name="author" content="qiniu.com" />
+		<meta name="copyright" content="qiniu.com" />
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<meta http-equiv="Content-Language" content="zh-cn" />
+		<meta http-equiv="imagetoolbar" content="false" />
+		<meta name="MSSmartTagsPreventParsing" content="true" />
+		<title>qboxrsctl 命令行辅助工具 | 七牛云存储</title>
+		<link rel="shortcut icon" href="/favicon.ico" type="image/gif" />
+		<link href="/static/css/reset.css" rel="stylesheet" type="text/css" />
+		<link href="/static/css/960.css" rel="stylesheet" type="text/css" />
+		<link href="/static/css/uv_active4d.css" rel="stylesheet" type="text/css" />
+		<link href="/static/css/documentation.css" media="screen" rel="stylesheet" type="text/css">
+	</head>
+	<body class="api">
+		<div id="header-wrapper">
+			<div id="header">
+				<div>
+					<a class="logo" href="/">七牛云存储</a>
+					<ul class="nav">
+						<li><a href="https://portal.qiniu.com">开发者平台</a></li>
+						<li><a href="http://www.qiniu.com">七牛官网</a></li>
+						<!-- <li><a href="/faq/FAQ.html">FAQ</a></li> -->
+					</ul>
+				</div>
+			</div><!-- #header -->
+		</div><!-- #header-wrapper -->
+
+		<div id="wrapper">
+			<div class="content">	
+				<h1>qboxrsctl 命令行辅助工具<span id="version"><no value></span></h1>
+				<article>
+				<h2>简介</h2>
+
+<p>qboxrsctl 是根据七牛云存储API实现的一个简易命令行辅助工具。覆盖七牛云存储开发者网站包含的大部分甚至更高级的功能。开发者在对七牛云存储 API 有基本了解的情况下，此工具将会非常适用。</p>
+
+<h2>下载</h2>
+
+<p>qboxrsctl 命令行辅助工具下载地址：</p>
+
+<ul>
+<li>Mac OS: <a href="http://devtools.qiniudn.com/qiniu-devtools-darwin_amd64-current.zip">http://devtools.qiniudn.com/qiniu-devtools-darwin_amd64-current.zip</a></li>
+<li>Linux 64bits: <a href="http://devtools.qiniudn.com/qiniu-devtools-linux_amd64-current.zip">http://devtools.qiniudn.com/qiniu-devtools-linux_amd64-current.zip</a></li>
+<li>Linux 32bits: <a href="http://devtools.qiniudn.com/qiniu-devtools-linux_386-current.zip">http://devtools.qiniudn.com/qiniu-devtools-linux_386-current.zip</a></li>
+<li>Windows 32bits: <a href="http://devtools.qiniudn.com/qiniu-devtools-windows_386-current.zip">http://devtools.qiniudn.com/qiniu-devtools-windows_386-current.zip</a></li>
+<li>Windows 64bits: <a href="http://devtools.qiniudn.com/qiniu-devtools-windows_amd64-current.zip">http://devtools.qiniudn.com/qiniu-devtools-windows_amd64-current.zip</a></li>
+</ul>
+
+<h2>用法</h2>
+
+<p><strong>授权操作</strong></p>
+
+<ul>
+<li><a href="#login">登录</a></li>
+</ul>
+
+<p><strong>账号管理</strong></p>
+
+<ul>
+<li><a href="#info">查看帐号信息</a></li>
+<li><a href="#newaccess">生成密钥（AccessKey/SecretKey）</a></li>
+<li><a href="#appinfo">查看密钥（AccessKey/SecretKey）</a></li>
+<li><a href="#delaccess">删除密钥（AccessKey/SecretKey）</a></li>
+</ul>
+
+<p><strong>空间管理</strong></p>
+
+<ul>
+<li><a href="#mkbucket">创建空间（Bucket）</a></li>
+<li><a href="#set-bucket-public">将空间设置为公开</a></li>
+<li><a href="#set-bucket-private">将空间设置为私有</a></li>
+<li><a href="#buckets">列出所有空间（Buckets）</a></li>
+<li><a href="#bucketinfo">查看指定空间（Bucket）信息</a></li>
+<li><a href="#drop">删除空间（Bucket）</a></li>
+<li><a href="#img">设置镜像存储（源站加速）</a></li>
+<li><a href="#unimg">取消镜像存储</a></li>
+<li><a href="#refresh">清除配置缓存</a></li>
+</ul>
+
+<p><strong>云处理</strong></p>
+
+<ul>
+<li><a href="#style">设置API规格别名</a></li>
+<li><a href="#unstyle">取消API规格别名</a></li>
+<li><a href="#separator">设置友好URL分隔符</a></li>
+<li><a href="#protected">设置源文件/原图保护</a></li>
+</ul>
+
+<p><strong>文件操作</strong></p>
+
+<ul>
+<li><a href="#put">上传文件</a></li>
+<li><a href="#get">下载文件</a></li>
+<li><a href="#stat">查看文件</a></li>
+<li><a href="#cp">复制文件</a></li>
+<li><a href="#mv">移动文件</a></li>
+<li><a href="#del">删除文件</a></li>
+</ul>
+
+<p>qboxrsctl 各个指令的用法可以在命令行直接输入 qboxrsctl 不带参数来获得。</p>
+
+<h2>1. 授权操作</h2>
+
+<p><a name="login"></a></p>
+
+<h3>1.1 登录</h3>
+
+<pre><code>qboxrsctl login &lt;User&gt; &lt;Passwd&gt;
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<td>参数</td>
+<td>说明</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>User</td>
+<td>用户名，一般为注册邮箱</td>
+</tr>
+
+<tr>
+<td>Passwd</td>
+<td>登录密码</td>
+</tr>
+</tbody>
+</table>
+
+<p>用您的开发者帐号登录七牛云存储，登录成功后，才能进行接下来所有其他指令操作。</p>
+
+<p>登录成功后，会话的有效期是 3600 秒（一个小时），一个小时后需要重新登录。</p>
+
+<h2>2. 账号管理</h2>
+
+<p><a name="info"></a></p>
+
+<h3>2.1 查看帐号信息</h3>
+
+<pre><code>qboxrsctl info
+</code></pre>
+
+<p>返回账号信息</p>
+
+<p><a name="newaccess"></a></p>
+
+<h3>2.2 生成密钥（AccessKey/SecretKey）</h3>
+
+<pre><code>qboxrsctl newaccess &lt;AppName&gt;
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<td>参数</td>
+<td>说明</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>AppName</td>
+<td>应用名称，网站上默认创建的应用名称是：<code>default</code></td>
+</tr>
+</tbody>
+</table>
+
+<p><a name="appinfo"></a></p>
+
+<h3>2.3 查看密钥（AccessKey/SecretKey）</h3>
+
+<pre><code>qboxrsctl appinfo &lt;AppName&gt;
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<td>参数</td>
+<td>说明</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>AppName</td>
+<td>应用名称，网站上默认使用的应用名称是：<code>default</code></td>
+</tr>
+</tbody>
+</table>
+
+<p><a name="delaccess"></a></p>
+
+<h3>2.4 删除密钥（AccessKey/SecretKey）</h3>
+
+<pre><code>qboxrsctl delaccess &lt;AppName&gt; &lt;AccessKey&gt;
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<td>参数</td>
+<td>说明</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>AppName</td>
+<td>应用名称，网站上默认使用的应用名称是：<code>default</code></td>
+</tr>
+
+<tr>
+<td>AccessKey</td>
+<td>指定要删除掉的 AccessKey</td>
+</tr>
+</tbody>
+</table>
+
+<h2>3. 空间管理</h2>
+
+<p><a name="mkbucket"></a></p>
+
+<h3>3.1 创建空间（Bucket）</h3>
+
+<pre><code>qboxrsctl mkbucket &lt;Bucket&gt;
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<td>参数</td>
+<td>说明</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Bucket</td>
+<td>空间名称，字母数字下划线组合。</td>
+</tr>
+</tbody>
+</table>
+
+<p><a name="set-bucket-public"></a></p>
+
+<h3>3.2 将空间设置为公开</h3>
+
+<pre><code>qboxrsctl private &lt;Bucket&gt; 0
+</code></pre>
+
+<p><a name="set-bucket-private"></a></p>
+
+<h3>3.3 将空间设置为私有</h3>
+
+<pre><code>qboxrsctl private &lt;Bucket&gt; 1
+</code></pre>
+
+<p><a name="buckets"></a></p>
+
+<h3>3.4 列出所有空间（Buckets）</h3>
+
+<pre><code>qboxrsctl buckets
+</code></pre>
+
+<p><a name="bucketinfo"></a></p>
+
+<h3>3.5 查看指定空间（Bucket）信息</h3>
+
+<pre><code>qboxrsctl bucketinfo &lt;Bucket&gt;
+</code></pre>
+
+<p><a name="drop"></a></p>
+
+<h3>3.6 删除空间（Bucket）</h3>
+
+<pre><code>qboxrsctl drop -f &lt;Bucket&gt;
+</code></pre>
+
+<p><a name="img"></a></p>
+
+<h3>3.7 设置镜像存储（源站加速）</h3>
+
+<pre><code>qboxrsctl img &lt;Bucket&gt; &lt;SrcUrl&gt;[,&lt;SrcUrl2&gt;,...] [SrcHost]
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<td>参数</td>
+<td>说明</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Bucket</td>
+<td>指定用于托管源站资源的存储空间名称，必填。</td>
+</tr>
+
+<tr>
+<td>SrcUrl</td>
+<td>源站地址，必填，可设置多个。格式：<code>http://domain:port/</code> 或者 <code>http://ip:port/</code>，其中 port 可选。</td>
+</tr>
+
+<tr>
+<td>SrcHost</td>
+<td>源站域名，可选</td>
+</tr>
+</tbody>
+</table>
+
+<p><a name="unimg"></a></p>
+
+<h3>3.8 取消镜像存储</h3>
+
+<pre><code>qboxrsctl unimg &lt;Bucket&gt;
+</code></pre>
+
+<p><a name="refresh"></a></p>
+
+<h3>3.9 清除配置缓存</h3>
+
+<pre><code>qboxrsctl refresh &lt;Bucket&gt;
+</code></pre>
+
+<h2>4. 云处理</h2>
+
+<p><a name="style"></a></p>
+
+<h3>4.1 设置API规格别名</h3>
+
+<pre><code>qboxrsctl style &lt;Bucket&gt; &lt;aliasName&gt; &lt;fop&gt;
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<td>参数</td>
+<td>说明</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Bucket</td>
+<td>存储空间名称</td>
+</tr>
+
+<tr>
+<td>aliasName</td>
+<td>别名名称</td>
+</tr>
+
+<tr>
+<td>fop</td>
+<td>API规格定义，可使用 <a href="/api/image-process.html">图像处理接口</a>、<a href="/api/audio-video-hls-process.html">音频 / 视频 / 流媒体处理接口</a> 等。</td>
+</tr>
+</tbody>
+</table>
+
+<p>友好URL访问形式：</p>
+
+<pre><code>http://&lt;Domain&gt;/&lt;Key&gt;&lt;Sep&gt;&lt;Name&gt;
+</code></pre>
+
+<p><a name="unstyle"></a></p>
+
+<h3>4.2 取消API规格别名</h3>
+
+<pre><code>qboxrsctl unstyle &lt;Bucket&gt; &lt;Name&gt;
+</code></pre>
+
+<p><a name="separator"></a></p>
+
+<h3>4.3 设置友好URL分隔符</h3>
+
+<pre><code>qboxrsctl separator &lt;Bucket&gt; &lt;Sep&gt;
+</code></pre>
+
+<p><a name="protected"></a></p>
+
+<h3>4.4 设置源文件/原图保护</h3>
+
+<pre><code>qboxrsctl protected &lt;Bucket&gt; &lt;Protected&gt;
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<td>参数</td>
+<td>说明</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Protected</td>
+<td>可选值为 <code>0</code> 或者 <code>1</code> ，<code>0</code>表示不开启保护，<code>1</code>表示开启保护。</td>
+</tr>
+</tbody>
+</table>
+
+<h2>5. 文件操作</h2>
+
+<p><a name="put"></a></p>
+
+<h3>5.1 上传文件</h3>
+
+<pre><code>qboxrsctl put &lt;Bucket&gt; &lt;Key&gt; &lt;SrcFile&gt;
+</code></pre>
+
+<p>上传一个大文件（超过 4MB）</p>
+
+<pre><code>qboxrsctl put -c &lt;Bucket&gt; &lt;Key&gt; &lt;SrcFile&gt;
+</code></pre>
+
+<p>加上选项 <code>c</code>　会启用切片并行上传一个超过大文件。（超过 4MB）</p>
+
+<p><a name="get"></a></p>
+
+<h3>5.2 下载文件</h3>
+
+<pre><code>qboxrsctl get &lt;Bucket&gt; &lt;Key&gt; &lt;DestFile&gt;
+</code></pre>
+
+<p><a name="stat"></a></p>
+
+<h3>5.3 查看文件</h3>
+
+<pre><code>qboxrsctl stat &lt;Bucket&gt; &lt;Key&gt;
+</code></pre>
+
+<p><a name="cp"></a></p>
+
+<h3>5.4 复制文件</h3>
+
+<p>将 <code>Bucket1</code> 中的 <code>KeySrc</code> 复制到 <code>Bucket2</code> 并命名为 <code>KeyDest</code>, <code>Bucket1</code> 和 <code>Bucket2</code> 可以是同一个。</p>
+
+<pre><code>qboxrsctl cp &lt;Bucket1:KeySrc&gt; &lt;Bucket2:KeyDest&gt;
+</code></pre>
+
+<p><a name="mv"></a></p>
+
+<h3>5.5 移动文件</h3>
+
+<p>将 <code>Bucket1</code> 中的 <code>KeyOld</code> 移动到 <code>Bucket2</code> 并命名为 <code>KeyNew</code>, <code>Bucket1</code> 和 <code>Bucket2</code> 可以是同一个。</p>
+
+<pre><code>qboxrsctl mv &lt;Bucket1:KeyOld&gt; &lt;Bucket2:KeyNew&gt;
+</code></pre>
+
+<p><a name="del"></a></p>
+
+<h3>5.6 删除文件</h3>
+
+<pre><code>qboxrsctl del &lt;Bucket&gt; &lt;Key&gt;
+</code></pre>
+
+				</article>
+			</div>
+
+			<div id="js-sidebar" class="sidebar-shell">
+				<div class="js-toggle-list sidebar-module expandable">
+					<ul>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">新手上路</span></h3>
+						<ul class="js-guides">
+							<li><a href="/guide/testing.html">测试指南</a></li>
+						</ul>
+						</li>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">API</span></h3>
+						<ul class="js-guides">
+							<li><a href="/api/put.html">上传</a></li>
+							<li><a href="/api/get.html">下载</a></li>
+							<li><a href="/api/file-handle.html">文件管理</a></li>
+							<li><a href="/api/image-process.html">图像处理</a></li>
+							<li><a href="/api/audio-video-hls-process.html">音频/视频/流媒体处理</a></li>
+							<li><a href="/api/qrcode.html">生成二维码 - QR code</a></li>
+							<li><a href="/api/markdown-convert.html">Markdown 转 HTML</a></li>
+							<li><a href="/api/pipeline.html">Pipeline API</a></li>
+						</ul>
+						</li>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">SDK</span></h3>
+						<ul class="js-guides">
+							<li><a href="/ios-sdk/index.html">Objective-C (iOS)</a></li>
+							<li><a href="/android-sdk/index.html">Java (Android)</a></li>
+							<li><a href="/java-sdk/index.html">Java</a></li>
+							<li><a href="/php-sdk/index.html">PHP</a></li>
+							<li><a href="/python-sdk/index.html">Python</a></li>
+							<li><a href="/ruby-sdk/index.html">Ruby</a></li>
+							<li><a href="/nodejs-sdk/index.html">Node.js</a></li>
+							<li><a href="/csharp-sdk/index.html">C#</a></li>
+							<li><a href="/c-sdk/index.html">C/C++</a></li>
+							<li><a href="/go-sdk/index.html">Go</a></li>
+							<li><a href="/perl-sdk/index.html">Perl</a></li>							
+						</ul>
+						</li>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">上传及开发调试工具</span></h3>
+						<ul class="js-guides">
+							<li><a href="/tools/qrsync.html">qrsync</a></li>
+							<li><a href="/tools/qboxrsctl.html">qboxrsctl</a></li>
+							<li><a href="/tools/qiniu-autosync.html">qiniu-autosync</a></li>
+						</ul>
+						</li>
+					</ul>
+				</div> <!-- /sidebar-module -->
+				<div class="sidebar-module">
+					<p>帮助联系: <a href="mailto:support@qiniu.com">support@qiniu.com</a></p>
+				</div>
+			</div><!-- /sidebar-shell -->
+
+		</div><!-- #wrapper -->
+
+		<div id="footer" >
+			<div class="lower_footer">
+				<div class="footer_inner clearfix">
+					<p>&copy; <span id="year">2012-2013</span> <a href="/">docs.qiniu.com</a>. All rights reserved. Powerd by <a href="http://www.qiniu.com" target="_blank">七牛云存储</a>. <a href="http://www.miibeian.gov.cn/" target="_blank">沪ICP备11037377号-2</a></p>
+				</div><!-- /.site -->
+			</div><!-- /.lower_footer -->
+		</div><!-- /#footer -->
+
+		<!-- <div class="popover fade top in"><div class="arrow"></div><h3 class="popover-title">qboxrsctl 命令行辅助工具</h3><div id="popover-content"></div></div> -->
+		<script src="/static/js/jquery.js" type="text/javascript"></script>
+		<script src="/static/js/qiniudoc.js" type="text/javascript"></script>
+		<script src="/static/js/jquery.scrollUp.min.js"></script>
+		<script type="text/javascript">
+			   //var sdkName = "qboxrsctl 命令行辅助工具"
+				 //$("#popover-content").html($("article ul")[0].outerHTML)
+				 (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+					(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+					m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+					})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+					ga('create', 'UA-40857860-3', 'qiniu.com');
+					ga('send', 'pageview');
+		 </script>
+	 </body>
+ </html>

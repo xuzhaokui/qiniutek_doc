@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="robots" content="all" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<meta name="description" content="七牛云存储API和SDK文档" />
+		<meta name="keywords" content="七牛, 七牛云存储, 七牛云存储API, 七牛云存储SDK, qrsync, qboxrsctl, QinuRS, S3" />
+		<meta name="author" content="qiniu.com" />
+		<meta name="copyright" content="qiniu.com" />
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<meta http-equiv="Content-Language" content="zh-cn" />
+		<meta http-equiv="imagetoolbar" content="false" />
+		<meta name="MSSmartTagsPreventParsing" content="true" />
+		<title>上传接口 | 七牛云存储</title>
+		<link rel="shortcut icon" href="/favicon.ico" type="image/gif" />
+		<link href="/static/css/reset.css" rel="stylesheet" type="text/css" />
+		<link href="/static/css/960.css" rel="stylesheet" type="text/css" />
+		<link href="/static/css/uv_active4d.css" rel="stylesheet" type="text/css" />
+		<link href="/static/css/documentation.css" media="screen" rel="stylesheet" type="text/css">
+	</head>
+	<body class="api">
+		<div id="header-wrapper">
+			<div id="header">
+				<div>
+					<a class="logo" href="/">七牛云存储</a>
+					<ul class="nav">
+						<li><a href="https://portal.qiniu.com">开发者平台</a></li>
+						<li><a href="http://www.qiniu.com">七牛官网</a></li>
+						<!-- <li><a href="/faq/FAQ.html">FAQ</a></li> -->
+					</ul>
+				</div>
+			</div><!-- #header -->
+		</div><!-- #header-wrapper -->
+
+		<div id="wrapper">
+			<div class="content">	
+				<h1>上传接口<span id="version">v6</span></h1>
+				<article>
+				<ul>
+<li><a href="#workflow">上传流程</a>
+
+<ul>
+<li><a href="#local-upload">Local - 本地上传</a></li>
+<li><a href="#ugc-upload">UGC - 终端用户加速直传</a>
+
+<ul>
+<li><a href="#upload-without-callback">上传模式1——普通上传</a></li>
+<li><a href="#upload-with-callback">上传模式2——高级上传（带回调）</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#upload">上传文件</a>
+
+<ul>
+<li><a href="#upload-api">接口 - API</a></li>
+<li><a href="#uploadToken">凭证 - uploadToken</a>
+
+<ul>
+<li><a href="#uploadToken-algorithm">算法</a></li>
+<li><a href="#uploadToken-args">参数</a></li>
+<li><a href="#uploadToken-returnBody">使用上传模型1，App-Client 接收来自 Qiniu-Cloud-Storage 的 Response Body</a></li>
+<li><a href="#upload-with-callback-appserver">使用上传模型2，App-Client 接收来自 App-Server 的 Response Body</a></li>
+<li><a href="#uploadToken-asyncOps">音视频上传预转 - asyncOps</a></li>
+<li><a href="#uploadToken-examples">样例代码</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#dictionary">附录</a>
+
+<ul>
+<li><a href="#MagicVariables">魔法变量 - MagicVariables</a></li>
+<li><a href="#xVariables">自定义变量 - xVariables</a></li>
+<li><a href="#error-code">错误码</a></li>
+</ul></li>
+</ul>
+
+<p><a name="workflow"></a></p>
+
+<h2>上传流程</h2>
+
+<p><a name="local-upload"></a></p>
+
+<h3>Local - 本地上传</h3>
+
+<p>若您需要上传已存在您电脑或者是服务器上的文件到七牛云存储，可以直接使用七牛提供的上传工具：</p>
+
+<table>
+<thead>
+<tr>
+<td>名称</td>
+<td>使用</td>
+<td>适用平台</td>
+<td>说明</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><a href="/tools/qrsync.html">qrsync</a></td>
+<td>命令行</td>
+<td>Linux,Windows,MacOSX,FreeBSD</td>
+<td>手动同步文件/文件夹到七牛云存储</td>
+</tr>
+
+<tr>
+<td><a href="/tools/qiniu-autosync.html">qiniu-autosync</a></td>
+<td>命令行</td>
+<td>Linux</td>
+<td>自动同步指定文件夹内的新增或改动文件</td>
+</tr>
+</tbody>
+</table>
+
+<p>如果是需要通过网站(Web)或是移动应用(App)等客户端上传文件，则可以参考如下 UGC (User Generated Content) 上传流程。</p>
+
+<p><a name="ugc-upload"></a></p>
+
+<h3>UGC - 终端用户加速直传</h3>
+
+<p><a name="upload-without-callback"></a></p>
+
+<p><strong>上传模式1——普通上传</strong></p>
+
+<pre><code>                                       *************
+                                   ****             ****
+                                 **                     **
+                               **                         **
+                               *    Qiniu-Cloud-Storage    *
+                               **                         **
+                                 **                     **
+                               ^   ****             ****
+                              /   /    *************
+                             /   /
+                            /   /
+                           /   /
+                          /   /
+                         /   /
+                        /   / (4) Return Result
+                       /   /
+      (3) Upload File /   /
+                     /   /
+                    /   /
+                   /   /
+                  /   /
+                 /   /
+                /   /
+               /   /
+              /   v
+      +------------------+                                        +------------------+
+      |                  |                                        |                  |
+      |                  |    (1) Request Upload (can be once)    |                  |
+      |                  |---------------------------------------&gt;|                  |
+      |    App-Client    |                                        |    App-Server    |
+      |                  |&lt;---------------------------------------|                  |
+      |                  |    (2) Make Policy / UploadToken       |                  |
+      |                  |                                        |                  |
+      +------------------+                                        +------------------+
+               |                                                           ^
+               |              (5) Callback                                 |
+               +-----------------------------------------------------------+
+</code></pre>
+
+<ol>
+<li>App-Client 向 App-Server 请求上传文件</li>
+<li>App-Server 使用 Qiniu-SDK 生成上传授权凭证（UploadToken），并颁发给 App-Client</li>
+<li>App-Client 取得上传授权许可（UploadToken）后，使用 Qiniu-Client-SDK 直传文件到最近的存储节点</li>
+<li>文件上传成功后，Qiniu 返回给 App-Client 上传结果（可包含相应的文件信息）</li>
+<li>App-Client 将文件上传结果及相关信息汇报给 App-Server，App-Server 可写表做记录等操作</li>
+</ol>
+
+<p><a name="upload-with-callback"></a></p>
+
+<p><strong>上传模式2——高级上传（带回调）</strong></p>
+
+<pre><code>                                       *************
+                                   ****             ****
+                                 **                     **
+                               **                         **
+                               *    Qiniu-Cloud-Storage    *
+                               **                         **
+                                 **                     **
+                               ^   ****             ****    \
+                              /   /    *************     ^   \
+                             /   /                        \   \
+                            /   /                          \   \
+                           /   /                            \   \
+                          /   /                              \   \
+                         /   /                                \   \
+                        /   /                                  \   \ (4) Callback
+                       /   /                                    \   \
+      (3) Upload File /   /                                      \   \
+                     /   /                                        \   \
+                    /   / (6) Return Result                        \   \
+                   /   /                                            \   \
+                  /   /                            (5) Return Result \   \
+                 /   /                                                \   \
+                /   /                                                  \   \
+               /   /                                                    \   \
+              /   v                                                      \   v
+      +------------------+                                        +------------------+
+      |                  |                                        |                  |
+      |                  |    (1) Request Upload                  |                  |
+      |                  |---------------------------------------&gt;|                  |
+      |    App-Client    |                                        |    App-Server    |
+      |                  |&lt;---------------------------------------|                  |
+      |                  |    (2) Make Policy / UploadToken       |                  |
+      |                  |                                        |                  |
+      +------------------+                                        +------------------+
+</code></pre>
+
+<ol>
+<li>App-Client 向 App-Server 请求上传文件</li>
+<li>App-Server 使用 Qiniu-SDK 生成上传授权凭证（UploadToken），并颁发给 App-Client</li>
+<li>App-Client 取得上传授权许可（UploadToken）后，使用 Qiniu-Client-SDK 直传文件到最近的存储节点</li>
+<li>文件上传成功后，Qiniu 以 HTTP POST 方式告知 App-Server 上传结果（可包含相应的文件信息）</li>
+<li>App-Server 可写表做记录等操作，然后经 Qiniu 中转返回给 App-Client 它想要的信息</li>
+<li>Qiniu 作为代理，原封不动地将回调 App-Server 的返回结果回传给 App-Client</li>
+</ol>
+
+<p><strong>其中模型2相对于模型1更为高级，体现在以下几方面</strong>:</p>
+
+<ol>
+<li><p>App Client 无需向 App-Server 发送通知，全部统一由 Qiniu 发送 Callback，当存在多种终端（比如Web/iOS/Android）都需要上传文件时，每个终端不需要各自处理 Callback 业务逻辑。</p></li>
+
+<li><p>Callback 环节加速，七牛云存储的就近节点能比 App-Client 以更优异的网络回调 App-Server 。</p></li>
+
+<li><p>只要文件上传成功，App-Server 必然知情。即使 App-Server 回调失败，App-Client 还是会得到完整的回调数据，可自定义策略进行异步处理。</p></li>
+</ol>
+
+<p><strong>注意</strong></p>
+
+<ul>
+<li>以上两种上传模型中，步骤(1)和步骤(2)中 App-Client 获取上传授权凭证（UploadToken）不用重复频繁获取，UploadToken 可通过 <code>deadline</code> 选项设置有效期，在设定的有效期内可多次复用。后续 <a href="#uploadToken-algorithm">上传授权凭证 - uploadToken 算法说明</a> 会解释各选项的具体作用。</li>
+</ul>
+
+<table>
+<thead>
+<tr>
+<td>适用平台</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>APP - 移动端应用（iOS、Android、WindowsPhone、BlackBerry、Symbian 等）</td>
+</tr>
+
+<tr>
+<td>WEB - 浏览器网页</td>
+</tr>
+</tbody>
+</table>
+
+<p><a name="upload-api"></a></p>
+
+<h2>上传API</h2>
+
+<p>HTML Form API</p>
+
+<pre><code>&lt;form method=&quot;post&quot; action=&quot;http://up.qiniu.com/&quot; enctype=&quot;multipart/form-data&quot;&gt;
+  &lt;input name=&quot;key&quot; type=&quot;hidden&quot; value=&quot;{FileID}&quot;&gt;
+  &lt;input name=&quot;x:custom_field_name&quot; type=&quot;hidden&quot; value=&quot;{SomeVal}&quot;&gt;
+  &lt;input name=&quot;token&quot; type=&quot;hidden&quot; value=&quot;{UploadToken}&quot;&gt;
+  &lt;input name=&quot;file&quot; type=&quot;file&quot; /&gt;
+&lt;/form&gt;
+</code></pre>
+
+<p>参数</p>
+
+<table>
+<thead>
+<tr>
+<td>名称</td>
+<td>类型</td>
+<td>必须</td>
+<td>说明</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>key</td>
+<td>string</td>
+<td>否</td>
+<td>标识文件的索引，所在的存储空间内唯一。key可包含斜杠，但不以斜杠开头，比如 <code>a/b/c.jpg</code> 是一个合法的key。若不指定 key，缺省使用文件的 etag（即上传成功后返回的hash值）作为key；此时若 UploadToken 有指定 returnUrl 选项，则文件上传成功后跳转到 <code>returnUrl?query_string</code>, query_string 包含<code>key={FileID}</code></td>
+</tr>
+
+<tr>
+<td>x:custom_field_name</td>
+<td>string</td>
+<td>否</td>
+<td><a href="#xVariables">自定义变量</a>，必须以 <code>x:</code> 开头命名，不限个数。可以在 uploadToken 的 <code>callbackBody</code> 选项中使用 <code>$(x:custom_field_name)</code> 求值。</td>
+</tr>
+
+<tr>
+<td>token</td>
+<td>string</td>
+<td>是</td>
+<td>上传授权凭证 - UploadToken</td>
+</tr>
+
+<tr>
+<td>file</td>
+<td>file</td>
+<td>是</td>
+<td>文件本身</td>
+</tr>
+</tbody>
+</table>
+
+<p>该 HTML Form API 还可以用如下 <code>multipart/form-data</code> 形式表达。</p>
+
+<pre><code>POST http://up.qiniu.com/
+Content-Type: multipart/form-data; boundary=&lt;Boundary&gt;
+
+&lt;Boundary&gt;
+Content-Disposition: form-data; name=&quot;key&quot;
+
+&lt;FileID&gt;
+
+&lt;Boundary&gt;
+Content-Disposition: form-data; name=&quot;x:custom_field_name&quot;
+
+&lt;SomeVal&gt;
+
+&lt;Boundary&gt;
+Content-Disposition: form-data; name=&quot;token&quot;
+
+&lt;UploadToken&gt;
+
+&lt;Boundary&gt;
+Content-Disposition: form-data; name=&quot;file&quot;; filename=&quot;&lt;FileName&gt;&quot;
+Content-Type: &lt;MimeType&gt;
+
+&lt;FileContent&gt;
+</code></pre>
+
+<p>上传完毕，Qiniu-Cloud-Storage 向 App-Client 返回如下信息：</p>
+
+<pre><code>HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: no-store
+Response Body: {
+    hash: &lt;FileETag string&gt;,
+    ...
+}
+</code></pre>
+
+<p><a name="uploadToken"></a></p>
+
+<h2>凭证 - uploadToken</h2>
+
+<table>
+<thead>
+<tr>
+<td>术语</td>
+<td>说明</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>AccessKey</td>
+<td>公钥，可用于识别七牛云存储帐号</td>
+</tr>
+
+<tr>
+<td>SecretKey</td>
+<td>密钥，可用于签名过程中进行加密</td>
+</tr>
+
+<tr>
+<td>uploadToken</td>
+<td>令牌，也称上传授权凭证</td>
+</tr>
+</tbody>
+</table>
+
+<p>uploadToken 有 3 个作用:</p>
+
+<ol>
+<li>识别 App-Client 的身份是否合法</li>
+<li>识别 App-Client 的请求是否合法</li>
+<li>双重识别合法的情况下，可以根据 uploadToken 元数据针对上传行为个性化处理</li>
+</ol>
+
+<p><a name="uploadToken-algorithm"></a></p>
+
+<h3>算法</h3>
+
+<p>uploadToken 算法如下：</p>
+
+<pre><code>// 步骤1：组织元数据（JSONString）
+Flags = {
+    scope: &lt;Bucket string&gt;,
+    deadline: &lt;UnixTimestamp int64&gt;,
+    endUser: &lt;EndUserId string&gt;,
+    returnUrl: &lt;RedirectURL string&gt;,
+    returnBody: &lt;ResponseBodyForAppClient string&gt;,
+    callbackBody: &lt;RequestBodyForAppServer string&gt;
+    callbackUrl: &lt;RequestUrlForAppServer string&gt;,
+    asyncOps: &lt;asyncProcessCmds string&gt;
+}
+
+// 步骤2：将 Flags 进行安全编码
+EncodedFlags = urlsafe_base64_encode(JSONString(Flags))
+
+// 步骤3：将编码后的元数据混入私钥进行签名
+Signature = hmac_sha1(EncodedFlags, SecretKey)
+
+// 步骤4：将签名摘要值进行安全编码
+EncodedSign = urlsafe_base64_encode(Signature)
+
+// 步骤5：连接各字符串，生成上传授权凭证
+uploadToken = AccessKey:EncodedSign:EncodedFlags
+</code></pre>
+
+<p><strong>注意</strong></p>
+
+<ul>
+<li><code>Flags</code> 数据必须为标准的 <a href="http://json.org/">JSON</a> 字符串</li>
+<li><code>Flags</code> 各字段里边的尖括号“<code>&lt;Variable Type&gt;</code>”内容表示要被替换掉的“变量”，“变量”的数据类型已在括号内指定</li>
+<li><code>urlsafe_base64_encode(string)</code> 函数按照标准的 <a href="http://www.ietf.org/rfc/rfc4648.txt">RFC 4648</a> 实现，开发者可以参考 <a href="https://github.com/qiniu">https://github.com/qiniu</a> 上各SDK的样例代码。</li>
+<li><code>AccessKey:EncodedSign:EncodedFlags</code> 这里的冒号是字符串，仅作为连接分隔符使用，最终连接组合的 UploadToken 也是一个字符串（String）。</li>
+<li><code>callbackUrl</code> 与 <code>returnUrl</code> 不可同时指定，两者只可选其一。</li>
+<li><code>callbackBody</code> 与 <code>returnBody</code> 不可同时指定，两者只可选其一。</li>
+</ul>
+
+<p><a name="uploadToken-args"></a></p>
+
+<h3>参数</h3>
+
+<p>uploadToken 参数详解：</p>
+
+<table>
+<thead>
+<tr>
+<td>字段名</td>
+<td>必须</td>
+<td>说明</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>scope</td>
+<td>是</td>
+<td>一般指文件要上传到的目标存储空间（Bucket）。若为&rdquo;Bucket&rdquo;，表示限定只能传到该Bucket（仅限于新增文件）；若为&rdquo;Bucket:Key&rdquo;，表示限定特定的文件，可修改该文件。</td>
+</tr>
+
+<tr>
+<td>deadline</td>
+<td>否</td>
+<td>定义 uploadToken 的失效时间，Unix时间戳，精确到秒，缺省为 3600 秒</td>
+</tr>
+
+<tr>
+<td>endUser</td>
+<td>否</td>
+<td>给上传的文件添加唯一属主标识，特殊场景下非常有用，比如根据终端用户标识给图片或视频打水印</td>
+</tr>
+
+<tr>
+<td>returnUrl</td>
+<td>否</td>
+<td>设置用于浏览器端文件上传成功后，浏览器执行301跳转的URL，一般为 HTML Form 上传时使用。文件上传成功后会跳转到 returnUrl?query_string, query_string 会包含 returnBody 内容。returnUrl 不可与 callbackUrl 同时使用。</td>
+</tr>
+
+<tr>
+<td>returnBody</td>
+<td>否</td>
+<td>文件上传成功后，自定义从 Qiniu-Cloud-Server 最终返回給终端 App-Client 的数据。支持 <a href="#MagicVariables">魔法变量</a>，不可与 callbackBody 同时使用。</td>
+</tr>
+
+<tr>
+<td>callbackBody</td>
+<td>否</td>
+<td>文件上传成功后，Qiniu-Cloud-Server 向 App-Server 发送POST请求的数据。支持 <a href="#MagicVariables">魔法变量</a> 和 <a href="#xVariables">自定义变量</a>，不可与 returnBody 同时使用。</td>
+</tr>
+
+<tr>
+<td>callbackUrl</td>
+<td>否</td>
+<td>文件上传成功后，Qiniu-Cloud-Server 向 App-Server 发送POST请求的URL，必须是公网上可以正常进行POST请求并能响应 HTTP Status 200 OK 的有效 URL</td>
+</tr>
+
+<tr>
+<td>asyncOps</td>
+<td>否</td>
+<td>指定文件（图片/音频/视频）上传成功后异步地执行指定的预转操作。每个预转指令是一个API规格字符串，多个预转指令可以使用分号“;”隔开</td>
+</tr>
+</tbody>
+</table>
+
+<p><a name="uploadToken-returnBody"></a></p>
+
+<h3>使用上传模型1，App-Client 接收来自 Qiniu-Cloud-Storage 的 Response Body</h3>
+
+<p>如果开发者使用上传模型1，App-Client 上传一张图片到 Qiniu-Cloud-Storage 后，App-Client 想知道该图片的一些信息比如 Etag, EXIF 等信息，那么此时即可在 uploadToken 中使用 <strong><code>returnBody</code></strong> 参数。</p>
+
+<p>App-Client 想求值得到的这些 Etag, EXIF 等信息我们称之为魔法变量（<a href="#MagicVariables">MagicVariables</a>）。</p>
+
+<p>returnBody 赋值可以把 魔法变量（<a href="#MagicVariables">MagicVariables</a>）的求值结果以 <code>Content-Type: application/json</code> 形式返回給 App-Client。</p>
+
+<p>一个典型的包含 MagicVariables 的 returnBody 字段声明如下（returnBody 必须是一个JSON字符串）：</p>
+
+<pre><code>Flags[&quot;returnBody&quot;] = `{
+    &quot;foo&quot;: &quot;bar&quot;,
+    &quot;name&quot;: $(fname),
+    &quot;size&quot;: $(fsize),
+    &quot;type&quot;: $(mimeType),
+    &quot;hash&quot;: $(etag),
+    &quot;w&quot;: $(imageInfo.width),
+    &quot;h&quot;: $(imageInfo.height),
+    &quot;color&quot;: $(exif.ColorSpace.val)
+}`
+</code></pre>
+
+<p>假使如上，当一个用户在 iOS 端用包含该 returnBody 字段的 uploadToken 成功上传一张图片，那么该 iOS 端程序将收到如下一段 HTTP Response 应答：</p>
+
+<pre><code>HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: no-store
+Response Body: {
+    &quot;foo&quot;: &quot;bar&quot;,
+    &quot;name&quot;: &quot;gogopher.jpg&quot;,
+    &quot;size&quot;: 214513,
+    &quot;type&quot;: &quot;image/jpg&quot;,
+    &quot;hash&quot;: &quot;Fh8xVqod2MQ1mocfI4S4KpRL6D98&quot;,
+    &quot;w&quot;: 640,
+    &quot;h&quot;: 480,
+    &quot;color&quot;: &quot;sRGB&quot;
+}
+</code></pre>
+
+<p>可用的魔法变量列表参考：<a href="#MagicVariables">MagicVariables</a></p>
+
+<h3>HTML Form 上传后跳转</h3>
+
+<p>若在 uploadToken 中指定了 <code>returnUrl</code> 和 <code>returnBody</code> 选项，且文件上传成功，Qiniu-Cloud-Storage 会返回如下应答：</p>
+
+<pre><code>HTTP/1.1 301 Moved Permanently
+Location: returnUrl?upload_ret={returnBodyEncoded}
+</code></pre>
+
+<p>即跳转到指定的 <code>returnUrl</code> 并附带上经过 <code>urlsafe_base64_encode()</code> 编码过的 <code>returnBody</code> 。 <code>urlsafe_base64_encode(string)</code> 函数按照标准的 <a href="http://www.ietf.org/rfc/rfc4648.txt">RFC 4648</a> 实现，开发者可以参考 <a href="https://github.com/qiniu">https://github.com/qiniu</a> 上各SDK的样例代码。可以通过逆向还原 <code>returnBody</code> 。</p>
+
+<p>若上传失败，且上传失败的原因不是由于 uploadToken 无效造成的，Qiniu-Cloud-Storage 会返回如下应答：</p>
+
+<pre><code>HTTP/1.1 301 Moved Permanently
+Location: returnUrl?code={error_code}&amp;error={error_message}
+</code></pre>
+
+<p><a name="upload-with-callback-appserver"></a></p>
+
+<h3>使用上传模型2，App-Client 接收来自 App-Server 的 Response Body</h3>
+
+<p>如果开发者使用了上传模型2，在 uploadToken 中指定了 <code>callbackUrl</code> 和 <code>callbackBody</code> 选项。App-Client 使用该 uploadToken 将文件上传成功后，Qiniu-Cloud-Storage 会向指定的 <code>callbackUrl</code> 以 HTTP POST 方式将 <code>callbackBody</code> 的值以 <code>application/x-www-form-urlencoded</code> 的形式发送给 App-Server。App-Server 接收请求后，返回 <code>Content-Type: &quot;application/json&quot;</code> 形式的 Response Body, 该段 JSON 数据会原封不动地经由 Qiniu-Cloud-Storage 返回给 App-Client 。</p>
+
+<p><strong>callbackUrl</strong> 必须是公网上可以公开访问的 URL</p>
+
+<p><strong>callbackUrl</strong> 若指定，<strong>callbackBody</strong> 也必须指定，且两者的值都不能为空</p>
+
+<p><strong>callbackBody</strong> 必须是 <code>a=1&amp;b=2&amp;c=3</code> 这种形式的字符串。当包含 <a href="#MagicVariables">魔法变量</a> 时，可以是这样一种形式：<code>a=1&amp;key=$(etag)&amp;size=$(fsize)&amp;uid=$(endUser)</code> 。当包含 <a href="#xVariables">自定义变量</a> 时，可以是这样一种形式：<code>test=$(x:test)&amp;key=$(etag)&amp;size=$(fsize)&amp;uid=$(endUser)</code>，其中 <code>x:test</code> 是一个自定义变量。自定义变量命名必须以 <code>x:</code> 开头，且在 <code>multipart/form-data</code> 上传流中存在。</p>
+
+<p>Qiniu-Cloud-Storage 回调 App-Server 成功后，App-Server 必须返回如下格式的 Response:</p>
+
+<pre><code>HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: no-store
+Response Body: {
+    &quot;foo&quot;: &quot;bar&quot;,
+    &quot;name&quot;: &quot;gogopher.jpg&quot;,
+    &quot;size&quot;: 214513,
+    &quot;type&quot;: &quot;image/jpg&quot;,
+    &quot;w&quot;: 640,
+    &quot;h&quot;: 480
+}
+</code></pre>
+
+<p>其中，Response Body 部分 App-Server 随意，只需为标准的 <a href="http://json.org">JSON</a> 格式即可。</p>
+
+<p>参考：</p>
+
+<ul>
+<li><a href="#MagicVariables">魔法变量 - MagicVariables</a></li>
+<li><a href="#xVariables">自定义变量 - xVariables</a></li>
+</ul>
+
+<h3>callback 的安全性保证</h3>
+
+<p>为了确保 Qiniu-Cloud-Storage 回调 App-Server 是安全且不被造成攻击的，Qiniu-Cloud-Storage 在向 App-Server 发送 HTTP POST 请求的时候，在 HTTP Headers 里边额外附加了一个 <code>Authorization</code> 字段，该字段值的生成算法同 <a href="/api/file-handle.html#digest-auth">文件管理接口：授权认证 - AccessToken</a> 一致，开发者可选在 App-Server 通过 SDK 提供的代码进行校验，以确保回调请求是合法的。</p>
+
+<h3>callback 失败处理</h3>
+
+<p>如果文件上传成功，但是 Qiniu-Cloud-Storage 回调 App-Server 失败，Qiniu-Cloud-Storage 会将回调失败的信息连同 <code>callbackBody</code> 数据本身返回给 App-Client, App-Client 可选自定义策略进行相应的处理。</p>
+
+<p><a name="uploadToken-asyncOps"></a></p>
+
+<h3>音视频上传预转 - asyncOps</h3>
+
+<p>七牛云存储的云处理API（图像/音视频在线处理）满足如下规格:</p>
+
+<pre><code>url?&lt;fop&gt;
+</code></pre>
+
+<p>即基于文件的 URL 通过问号传参来实现即时云处理，<code>&lt;fop&gt;</code> 表示 API 指令及其所需要的参数，是 File Operation 概念的缩写。</p>
+
+<p>例如,</p>
+
+<ul>
+<li><a href="http://apitest.b1.qiniudn.com/sample.wav?avthumb/mp3/ar/44100/aq/3">http://apitest.b1.qiniudn.com/sample.wav?avthumb/mp3/ar/44100/aq/3</a></li>
+</ul>
+
+<p>其中,</p>
+
+<ul>
+<li><code>url = http://apitest.b1.qiniudn.com/sample.wav</code></li>
+<li><code>fop = avthumb/mp3/ar/44100/aq/3</code></li>
+</ul>
+
+<p>表示将原 wav 格式的音频转换为 mp3 格式，并指定动态码率（VBR）参数为3，采样频率为 44100 进行输出。</p>
+
+<p>由于音视频文件一般都比较大，转换也是一个比较耗时的操作，故七牛云存储提供上传异步预转功能，即文件上传完毕后执行异步转换处理，这样在访问时即可获取到已经转换好了的目标文件。</p>
+
+<p>可以在上传时候指定预转选项，只需在生成 uploadToken 时对 <strong>asyncOps</strong> 赋值相应的 <code>&lt;fop&gt;</code> 指令即可。可同时异步执行多个预转指令：</p>
+
+<pre><code>asyncOps = &lt;fop&gt;[;&lt;fop2&gt;;&lt;fop3&gt;;…;&lt;fopN&gt;]
+</code></pre>
+
+<p><strong>asyncOps</strong> 预转示例参见如下说明。</p>
+
+<p><strong>上传</strong></p>
+
+<ol>
+<li>设定 <code>asyncOps = &quot;avthumb/mp3/ar/44100/ab/32k;avthumb/mp3/aq/6/ar/16000&quot;</code></li>
+<li>以此生成带有预转功能的上传授权凭证（UploadToken）</li>
+<li>向七牛云存储上传一个 aac 格式的音频文件</li>
+<li>传成功后，服务器会对这个 aac 音频文件异步地做如下两个预转操作
+
+<ul>
+<li><code>avthumb/mp3/ar/44100/ab/32k</code></li>
+<li><code>avthumb/mp3/aq/6/ar/16000</code></li>
+</ul></li>
+</ol>
+
+<p><strong>下载</strong></p>
+
+<p>可以通过 <code>http://&lt;domain&gt;/&lt;key&gt;</code> 的形式下载：</p>
+
+<ul>
+<li><code>http://&lt;bucket&gt;.qiniudn.com/&lt;key&gt;?avthunm/mp3/ar/44100/ab/32k</code></li>
+<li><code>http://&lt;bucket&gt;.qiniudn.com/&lt;key&gt;?avthumb/mp3/aq/6/ar/16000</code></li>
+</ul>
+
+<p>如果有为 <code>&lt;fop&gt;</code> 定义 <code>&lt;style&gt;</code>, 那么也可以用友好URL风格进行访问。</p>
+
+<p>我们先来熟悉 <a href="/tools/qboxrsctl.html">qboxrsctl</a> 的两个命令行，</p>
+
+<pre><code>// 定义 url 和 fop 之间的分隔符为 separator 
+qboxrsctl separator &lt;bucket&gt; &lt;separator&gt;
+
+// 定义 fop 的别名为 aliasName
+qboxrsctl style &lt;bucket&gt; &lt;aliasName&gt; &lt;fop&gt;
+</code></pre>
+
+<p>例如:</p>
+
+<pre><code>qboxrsctl separator &lt;bucket&gt; &quot;.&quot;
+qboxrsctl style &lt;bucket&gt; &quot;mp3&quot; &quot;avthumb/mp3/aq/6/ar/16000&quot;
+</code></pre>
+
+<p>那么，以下两个 URL 则等价:</p>
+
+<ul>
+<li><code>http://&lt;bucket&gt;.qiniudn.com/&lt;key&gt;?avthumb/mp3/aq/6/ar/16000</code></li>
+<li><code>http://&lt;bucket&gt;.qiniudn.com/&lt;key&gt;.mp3</code></li>
+</ul>
+
+<p>访问以上链接，如果之前上传已经成功做完预转，那么此次请求就不需要再转换，将会直接下载预转后的结果文件。</p>
+
+<p>图片、视频预转类似，开发者需要熟悉七牛云存储的更多 <code>&lt;fop&gt;</code> 指令，参考:</p>
+
+<ul>
+<li><a href="/api/image-process.html">图像处理接口</a></li>
+<li><a href="/api/audio-video-hls-process.html">音频/视频/流媒体处理</a></li>
+</ul>
+
+<p><a name="uploadToken-examples"></a></p>
+
+<h3>生成 uploadToken 的样例代码</h3>
+
+<p>生成 uploadToken 的样例代码可以参考:</p>
+
+<ul>
+<li>C - <a href="https://github.com/qiniu/c-sdk/blob/develop/qiniu/rs.c">https://github.com/qiniu/c-sdk/blob/develop/qiniu/rs.c</a></li>
+<li>Go - <a href="https://github.com/qiniu/api/blob/develop/rs/token.go">https://github.com/qiniu/api/blob/develop/rs/token.go</a></li>
+</ul>
+
+<p><a name="dictionary"></a></p>
+
+<h2>附录</h2>
+
+<p><a name="MagicVariables"></a></p>
+
+<h3>魔法变量 - MagicVariables</h3>
+
+<p>文件上传成功后，Qiniu-Cloud-Storage 返回给 App-Client 的 Response Body 可以包含该文件的一些属性信息，这些属性信息通常需要上传成功后询问 Qiniu-Cloud-Storage 得知，然后作为 Response Body 的一部分返回给 App-Client。</p>
+
+<p>例如 App-Client 成功上传一张图片到 Qiniu-Cloud-Storage，App-Client 想知道该图片的一些信息像是 Etag, EXIF 等信息，App-Client 想求值得到的这些 Etag, EXIF 等信息我们可以通过魔法变量（MagicVariables）的方式获取。</p>
+
+<p>MagicVariables 是一组规定的 API Call，可以使用 <code>$(APIName)</code> 或者是 <code>$(APIName.FieldName)</code> 的形式进行求值。主要用在 <a href="#uploadToken-returnBody">uploadToken 的 returnBody 选项</a> 中。</p>
+
+<p>可用 MagicVariables 列表:</p>
+
+<table>
+<thead>
+<tr>
+<td>API 名称</td>
+<td>子项</td>
+<td>说明</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>etag</td>
+<td>无</td>
+<td>文件上传成功后的 etag，上传前不指定 key 时，etag 等同于缺省的 key</td>
+</tr>
+
+<tr>
+<td>fname</td>
+<td>无</td>
+<td>原始文件名</td>
+</tr>
+
+<tr>
+<td>fsize</td>
+<td>无</td>
+<td>文件大小，单位: Byte</td>
+</tr>
+
+<tr>
+<td>mimeType</td>
+<td>无</td>
+<td>文件的资源类型，比如 .jpg 图片的资源类型为 <code>image/jpg</code></td>
+</tr>
+
+<tr>
+<td>imageInfo</td>
+<td>有</td>
+<td>获取所上传图片的基本信息，支持访问子字段</td>
+</tr>
+
+<tr>
+<td>exif</td>
+<td>有</td>
+<td>获取所上传图片EXIF信息，支持访问子字段</td>
+</tr>
+
+<tr>
+<td>endUser</td>
+<td>无</td>
+<td>获取 uploadToken 中指定的 endUser 选项的值，即终端用户ID</td>
+</tr>
+</tbody>
+</table>
+
+<p>MagicVariables 支持同 <a href="http://json.org/">JSON</a> 对象一样的 <code>{Object}.{Property}</code> 访问形式，比如：</p>
+
+<ul>
+<li>{API名称}</li>
+<li>{API名称}.{子项}</li>
+<li>{API名称}.{子项}.{下一级子项}</li>
+</ul>
+
+<p>其中花括号部分（“<code>{…}</code>”）实际情况下需要用具体的 API 及其子项代替。</p>
+
+<p>MagicVariables 求值示例：</p>
+
+<ul>
+<li><code>$(etag)</code> - 获取当前上传文件的 etag</li>
+<li><code>$(fname)</code> - 获取原始文件名</li>
+<li><code>$(fsize)</code> - 获取当前上传文件的大小</li>
+<li><code>$(mimeType)</code> - 获取当前上传文件的资源类型</li>
+<li><code>$(imageInfo)</code> -  获取当前上传图片的基本属性信息</li>
+<li><code>$(imageInfo.width)</code> - 获取当前上传图片的原始高度</li>
+<li><code>$(imageInfo.height)</code> - 获取当前上传图片的原始高度</li>
+<li><code>$(imageInfo.format)</code> -  获取当前上传图片的格式</li>
+<li><code>$(endUser)</code> - 获取 uploadToken 中指定的 endUser 选项的值，即终端用户ID</li>
+</ul>
+
+<p>imageInfo 接口返回的 JSON 数据可参考：<a href="http://qiniuphotos.qiniudn.com/gogopher.jpg?imageInfo">http://qiniuphotos.qiniudn.com/gogopher.jpg?imageInfo</a></p>
+
+<ul>
+<li><code>$(exif)</code> - 获取当前上传图片的 EXIF 信息</li>
+<li><code>$(exif.ApertureValue)</code> - 获取当前上传图片所拍照时的光圈信息</li>
+<li><code>$(exif.ApertureValue.val)</code> - 获取当前上传图片拍照时的具体光圈值</li>
+</ul>
+
+<p>exif 接口返回的 JSON 数据可参考：<a href="http://qiniuphotos.qiniudn.com/gogopher.jpg?exif">http://qiniuphotos.qiniudn.com/gogopher.jpg?exif</a></p>
+
+<p><a name="xVariables"></a></p>
+
+<h3>自定义变量 - xVariables</h3>
+
+<p>已知 <a href="#upload-api">上传API</a> 结构如下</p>
+
+<p>HTML Form API</p>
+
+<pre><code>&lt;form method=&quot;post&quot; action=&quot;http://up.qiniu.com/&quot; enctype=&quot;multipart/form-data&quot;&gt;
+  &lt;input name=&quot;key&quot; type=&quot;hidden&quot; value=&quot;{FileID}&quot;&gt;
+  &lt;input name=&quot;x:custom_field_name&quot; type=&quot;hidden&quot; value=&quot;{SomeVal}&quot;&gt;
+  &lt;input name=&quot;token&quot; type=&quot;hidden&quot; value=&quot;{UploadToken}&quot;&gt;
+  &lt;input name=&quot;file&quot; type=&quot;file&quot; /&gt;
+&lt;/form&gt;
+</code></pre>
+
+<p>自定义变量即是其中的 <code>x:custom_field_name</code>，Qiniu-Cloud-Storage 允许在 form 或 <code>multipart/form-data</code> 流中添加任意以 <code>x:</code> 开头的自定义字段，不限个数，例如：</p>
+
+<pre><code>&lt;input name=&quot;x:uid&quot; value=&quot;xxx&quot;&gt;
+&lt;input name=&quot;x:album_id&quot; value=&quot;yyy&quot;&gt;
+</code></pre>
+
+<p>这样，开发者在 uploadToken 的 <code>callbackBody</code> 选项里面就可以通过 <code>$(x:album_id)</code> 引用此自定义字段的值。例如此时 <code>callbackBody</code> 可以设置为 <code>key=$(etag)&amp;album=$(x:album_id)&amp;uid=$(x:uid)</code>，App-Server 通过此设置即可得到 App-Client 端文件上传成功后附带的自定义变量的值。</p>
+
+<p><a name="error-code"></a></p>
+
+<h3>错误码</h3>
+
+<table>
+<thead>
+<tr>
+<td>HTTP 状态码</td>
+<td>错误说明</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>400</td>
+<td>请求参数错误</td>
+</tr>
+
+<tr>
+<td>401</td>
+<td>认证授权失败，可能是 AccessKey/SecretKey 错误或 UploadToken 无效</td>
+</tr>
+
+<tr>
+<td>405</td>
+<td>请求方式错误，非预期的请求方式</td>
+</tr>
+
+<tr>
+<td>579</td>
+<td>文件上传成功，但是回调（callback app-server）失败</td>
+</tr>
+
+<tr>
+<td>599</td>
+<td>服务端操作失败</td>
+</tr>
+
+<tr>
+<td>614</td>
+<td>文件已存在</td>
+</tr>
+
+<tr>
+<td>631</td>
+<td>指定的存储空间（Bucket）不存在</td>
+</tr>
+
+<tr>
+<td>701</td>
+<td>上传数据块校验出错</td>
+</tr>
+</tbody>
+</table>
+
+				</article>
+			</div>
+
+			<div id="js-sidebar" class="sidebar-shell">
+				<div class="js-toggle-list sidebar-module expandable">
+					<ul>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">新手上路</span></h3>
+						<ul class="js-guides">
+							<li><a href="/guide/testing.html">测试指南</a></li>
+						</ul>
+						</li>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">API</span></h3>
+						<ul class="js-guides">
+							<li><a href="/api/put.html">上传</a></li>
+							<li><a href="/api/get.html">下载</a></li>
+							<li><a href="/api/file-handle.html">文件管理</a></li>
+							<li><a href="/api/image-process.html">图像处理</a></li>
+							<li><a href="/api/audio-video-hls-process.html">音频/视频/流媒体处理</a></li>
+							<li><a href="/api/qrcode.html">生成二维码 - QR code</a></li>
+							<li><a href="/api/markdown-convert.html">Markdown 转 HTML</a></li>
+							<li><a href="/api/pipeline.html">Pipeline API</a></li>
+						</ul>
+						</li>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">SDK</span></h3>
+						<ul class="js-guides">
+							<li><a href="/ios-sdk/index.html">Objective-C (iOS)</a></li>
+							<li><a href="/android-sdk/index.html">Java (Android)</a></li>
+							<li><a href="/java-sdk/index.html">Java</a></li>
+							<li><a href="/php-sdk/index.html">PHP</a></li>
+							<li><a href="/python-sdk/index.html">Python</a></li>
+							<li><a href="/ruby-sdk/index.html">Ruby</a></li>
+							<li><a href="/nodejs-sdk/index.html">Node.js</a></li>
+							<li><a href="/csharp-sdk/index.html">C#</a></li>
+							<li><a href="/c-sdk/index.html">C/C++</a></li>
+							<li><a href="/go-sdk/index.html">Go</a></li>
+							<li><a href="/perl-sdk/index.html">Perl</a></li>							
+						</ul>
+						</li>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">上传及开发调试工具</span></h3>
+						<ul class="js-guides">
+							<li><a href="/tools/qrsync.html">qrsync</a></li>
+							<li><a href="/tools/qboxrsctl.html">qboxrsctl</a></li>
+							<li><a href="/tools/qiniu-autosync.html">qiniu-autosync</a></li>
+						</ul>
+						</li>
+					</ul>
+				</div> <!-- /sidebar-module -->
+				<div class="sidebar-module">
+					<p>帮助联系: <a href="mailto:support@qiniu.com">support@qiniu.com</a></p>
+				</div>
+			</div><!-- /sidebar-shell -->
+
+		</div><!-- #wrapper -->
+
+		<div id="footer" >
+			<div class="lower_footer">
+				<div class="footer_inner clearfix">
+					<p>&copy; <span id="year">2012-2013</span> <a href="/">docs.qiniu.com</a>. All rights reserved. Powerd by <a href="http://www.qiniu.com" target="_blank">七牛云存储</a>. <a href="http://www.miibeian.gov.cn/" target="_blank">沪ICP备11037377号-2</a></p>
+				</div><!-- /.site -->
+			</div><!-- /.lower_footer -->
+		</div><!-- /#footer -->
+
+		<!-- <div class="popover fade top in"><div class="arrow"></div><h3 class="popover-title">上传接口</h3><div id="popover-content"></div></div> -->
+		<script src="/static/js/jquery.js" type="text/javascript"></script>
+		<script src="/static/js/qiniudoc.js" type="text/javascript"></script>
+		<script src="/static/js/jquery.scrollUp.min.js"></script>
+		<script type="text/javascript">
+			   //var sdkName = "上传接口"
+				 //$("#popover-content").html($("article ul")[0].outerHTML)
+				 (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+					(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+					m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+					})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+					ga('create', 'UA-40857860-3', 'qiniu.com');
+					ga('send', 'pageview');
+		 </script>
+	 </body>
+ </html>

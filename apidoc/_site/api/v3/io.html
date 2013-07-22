@@ -1,0 +1,1504 @@
+
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="robots" content="all" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<meta name="description" content="七牛云存储API和SDK文档" />
+		<meta name="keywords" content="七牛, 七牛云存储, 七牛云存储API, 七牛云存储SDK, qrsync, qboxrsctl, QinuRS, S3" />
+		<meta name="author" content="qiniu.com" />
+		<meta name="copyright" content="qiniu.com" />
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<meta http-equiv="Content-Language" content="zh-cn" />
+		<meta http-equiv="imagetoolbar" content="false" />
+		<meta name="MSSmartTagsPreventParsing" content="true" />
+		<title>云存储接口 | 七牛云存储</title>
+		<link rel="shortcut icon" href="/favicon.ico" type="image/gif" />
+		<link href="/static/css/reset.css" rel="stylesheet" type="text/css" />
+		<link href="/static/css/960.css" rel="stylesheet" type="text/css" />
+		<link href="/static/css/uv_active4d.css" rel="stylesheet" type="text/css" />
+		<link href="/static/css/documentation.css" media="screen" rel="stylesheet" type="text/css">
+	</head>
+	<body class="api">
+		<div id="header-wrapper">
+			<div id="header">
+				<div>
+					<a class="logo" href="/">七牛云存储</a>
+					<ul class="nav">
+						<li><a href="https://portal.qiniu.com">开发者平台</a></li>
+						<li><a href="http://www.qiniu.com">七牛官网</a></li>
+						<!-- <li><a href="/faq/FAQ.html">FAQ</a></li> -->
+					</ul>
+				</div>
+			</div><!-- #header -->
+		</div><!-- #header-wrapper -->
+
+		<div id="wrapper">
+			<div class="content">	
+				<h1>云存储接口<span id="version">v3</span></h1>
+				<article>
+				<p><strong>注意</strong>：初次阅读本篇文档前，您需要理解一些常用术语比如 Entry, EntryURI, EncodedEntryURI 等。关于七牛云存储API术语您可以查阅另一篇专门解释术语的文档：<a href="/v3/api/words/"><strong>理解常用术语</strong></a></p>
+
+<p>在请求七牛云存储各个接口之前，需要充分理解授权操作，可以参阅文档：<a href="/v3/api/auth/">应用接入与认证授权</a> 。</p>
+
+<h2>目录</h2>
+
+<ul>
+<li><a href="#mkbucket">创建空间</a></li>
+<li><a href="#upload">上传文件</a>
+
+<ul>
+<li><a href="#upload-token">生成上传授权凭证</a>
+
+<ul>
+<li><a href="#upload-token-algorithm">算法</a></li>
+<li><a href="#upload-token-examples">样例</a></li>
+</ul></li>
+<li><a href="#upload-file">授权直传文件</a>
+
+<ul>
+<li><a href="#upload-file-by-multipart">API（multipart/form-data）</a></li>
+<li><a href="#upload-file-by-html-form">HTML表单形式直传</a></li>
+</ul></li>
+<li><a href="#callback-after-uploaded">回调处理</a>
+
+<ul>
+<li><a href="#callback-logic">回调逻辑</a></li>
+<li><a href="#callback-as-proxy">作为代理</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#resumable-upload">断点续上传</a>
+
+<ul>
+<li><a href="#resumable-upload-keywords">术语</a></li>
+<li><a href="#resumable-upload-model">工作模型</a></li>
+<li><a href="#resumable-upload-workflow">流程</a></li>
+<li><a href="#resumable-upload-api">API</a>
+
+<ul>
+<li><a href="#resumable-upload-authorization">授权</a></li>
+<li><a href="#resumable-upload-mkblk">创建分割块（Block）并上传第一个数据块（Chunk）</a></li>
+<li><a href="#resumable-upload-bput">上传分割块（Block）中的数据块（Chunk）</a></li>
+<li><a href="#resumable-upload-mkfile">合并文件</a></li>
+</ul></li>
+<li><a href="#resumable-upload-examples">样例</a></li>
+</ul></li>
+<li><a href="#download">下载文件</a>
+
+<ul>
+<li><a href="#public-download">公有资源下载</a></li>
+<li><a href="#private-download">私有资源下载</a></li>
+<li><a href="#set-protected">设置源文件(比如原图)保护</a>
+
+<ul>
+<li><a href="#pub-access-mode">为指定的存储空间设置保护模式</a></li>
+<li><a href="#pub-separator">设置友好URL访问中的连接符</a></li>
+<li><a href="#pub-style">设置URL友好的风格样式名</a></li>
+<li><a href="#pub-unstyle">取消URL友好风格的样式名访问</a></li>
+</ul></li>
+<li><a href="#anti-theft-chain">防盗链设置</a>
+
+<ul>
+<li><a href="#uc-antiLeechMode">设置防盗链模式</a></li>
+<li><a href="#uc-referAntiLeech">更新防盗链记录值</a></li>
+</ul></li>
+<li><a href="#download-if-notfound">自定义 404 NotFound</a></li>
+<li><a href="#download-by-range-bytes">断点续下载</a></li>
+</ul></li>
+<li><a href="#stat">查看文件基本属性信息</a></li>
+<li><a href="#copy">复制文件</a></li>
+<li><a href="#move">移动文件</a></li>
+<li><a href="#delete">删除指定文件</a></li>
+<li><a href="#drop">删除所有文件（整个空间/Bucket）</a></li>
+<li><a href="#list">列出空间内的文件</a></li>
+<li><a href="#batch">批量操作</a>
+
+<ul>
+<li><a href="#batch-stat">批量获取文件基本属性信息</a></li>
+<li><a href="#batch-copy">批量复制文件</a></li>
+<li><a href="#batch-move">批量移动文件</a></li>
+<li><a href="#batch-delete">批量删除文件</a></li>
+</ul></li>
+<li><a href="#refresh-bucket">清除指定空间缓存</a></li>
+<li><a href="#list-all-buckets">列出所有空间（Buckets）</a></li>
+</ul>
+
+<p><a name="mkbucket"></a></p>
+
+<h3>1. 创建空间</h3>
+
+<pre><code>  POST http://rs.qbox.me/mkbucket/&lt;Bucket&gt;
+  Content-Type: application/x-www-form-urlencoded
+  Request Headers: {
+      Authorization: QBox &lt;ACCESS_TOKEN&gt;
+  }
+
+  HTTP/1.1 200 OK
+</code></pre>
+
+<p><strong>参数</strong></p>
+
+<p><code>&lt;Bucket&gt;</code>
+: 具体的空间名称，仅限[a-zA-Z0-9_-]组合。</p>
+
+<p>如果您不想通过 API 创建空间，也可以直接在七牛云存储开发者网站上直接 <a href="https://dev.qiniutek.com/buckets/new">新建空间</a>。</p>
+
+<p><a name="upload"></a></p>
+
+<h3>2. 上传文件</h3>
+
+<p>要上传一个文件，首先需要获得上传授权，七牛云存储通过 <code>uploadToken</code> 的方式实现上传授权操作。<code>uploadToken</code> 可以根据 <code>accessKey</code> 和 <code>secretKey</code> 对一组数据进行数字签名生成。在文件上传时，该 <code>uploadToken</code> 作为文件上传流中 multipart/form-data 的一部分进行传输，也可以附带在上传请求的 HTTP Headers 中传输。</p>
+
+<p><a name="upload-token"></a></p>
+
+<h4>2.1 生成上传授权凭证</h4>
+
+<p><a name="upload-token-algorithm"></a></p>
+
+<h5>2.1.1 算法　</h5>
+
+<p><code>uploadToken</code> 算法如下：</p>
+
+<pre><code>// 步骤1：组织元数据
+authInfo = {
+    scope: &lt;targetBucket string&gt;,
+    deadline: &lt;UnixTimestamp int64&gt;,
+    callbackUrl: &lt;callbackUrl string&gt;,
+    callbackBodyType: &lt;callbackBodyType string&gt;,
+    customer: &lt;EndUserId string&gt;,
+    escape: &lt;0|1&gt;,
+    asyncOps: &lt;asyncOps string&gt;,
+    returnBody: &lt;customResponseBody string&gt;
+}
+
+// 步骤2：编码元数据
+authInfoEncoded = urlsafe_base64_encode(json_encode(authInfo))
+
+// 步骤3：将编码后的元数据经过私钥签名，提取摘要值
+authDigest = hmac_sha1(authInfoEncoded, secretKey)
+
+// 步骤4：将签名摘要值进行安全编码
+authDigestEncoded = urlsafe_base64_encode(authDigest)
+
+// 步骤5：将公钥，已编码的摘要值和元数据进行字符串拼接，生成上传授权凭证
+uploadToken = accessKey:authDigestEncoded:authInfoEncoded
+</code></pre>
+
+<p><strong>步骤1</strong></p>
+
+<p><code>authInfo</code> 各个字段详解：</p>
+
+<table>
+<thead>
+<tr>
+<td>字段名</td>
+<td>类型</td>
+<td>是否必须</td>
+<td>说明</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>scope</td>
+<td>string</td>
+<td>必选</td>
+<td>一般指文件要上传到的目标存储空间（Bucket）。<code>scope</code> 字段还可以有更灵活的定义：若为&rdquo;Bucket&rdquo;，表示限定只能传到该Bucket（仅限于新增文件）；若为&rdquo;Bucket:Key&rdquo;，表示限定特定的文档，可新增或修改文件。</td>
+</tr>
+
+<tr>
+<td>deadline</td>
+<td>int64</td>
+<td>必须</td>
+<td>定义 uploadToken 的失效时间，Unix时间戳，精确到秒</td>
+</tr>
+
+<tr>
+<td>callbackUrl</td>
+<td>string</td>
+<td>可选</td>
+<td>定义文件上传完毕后，云存储服务端执行回调的远程URL。<strong>注意</strong>：若提供该字段，其值必须是公网上可以正常进行POST请求并能响应 HTTP Status 200 OK 的有效 URL ，且必须在 <a href="#upload-file-by-multipart"><code>multipart/form-data</code> 上传流</a> 中指定 <a href="#CallbackParams"><code>params</code> 字段</a> 的值。</td>
+</tr>
+
+<tr>
+<td>callbackBodyType</td>
+<td>string</td>
+<td>可选</td>
+<td>为执行远程回调指定Content-Type，比如可以是：application/x-www-form-urlencoded</td>
+</tr>
+
+<tr>
+<td>customer</td>
+<td>string</td>
+<td>可选</td>
+<td>给上传的文件添加唯一属主标识，特殊场景下非常有用，比如根据终端用户标识给图片打水印</td>
+</tr>
+
+<tr>
+<td>escape</td>
+<td>int</td>
+<td>可选</td>
+<td>可选值 0 或者 1，缺省为 0。值为 1 表示 callback 传递的自定义数据中允许存在转义符号 <code>$(VarExpression)</code>，参考 <a href="/v3/api/words/#VarExpression">VarExpression</a>。</td>
+</tr>
+
+<tr>
+<td>asyncOps</td>
+<td>string</td>
+<td>可选</td>
+<td>指定文件（图片/音频/视频）上传成功后异步地执行指定的预转操作。每个预转指令是一个API规格字符串，多个预转指令可以使用分号“;”隔开。</td>
+</tr>
+
+<tr>
+<td>returnBody</td>
+<td>string</td>
+<td>可选</td>
+<td>文件上传成功后，自定义从七牛云存储最终返回給终端程序（客户端）的回调参数，允许存在转义符号 <code>$(VarExpression)</code>，参考 <a href="/v3/api/words/#VarExpression">VarExpression</a>。</td>
+</tr>
+</tbody>
+</table>
+
+<p><a name="escape-expression"></a></p>
+
+<p><strong>escape</strong></p>
+
+<p>当 <code>escape</code> 的值为 <code>1</code> 时，常见的转义语法如下：</p>
+
+<ul>
+<li><p>若 <code>callbackBodyType</code> 为 <code>application/json</code> 时，一个典型的自定义回调数据（<a href="#CallbackParams">CallbackParams</a>）为：</p>
+
+<p><code>{foo: &quot;bar&quot;, size: $(fsize), etag: $(etag), w: $(imageInfo.width), h: $(imageInfo.height), exif: $(exif)}</code></p></li>
+
+<li><p>若 <code>callbackBodyType</code> 为 <code>application/x-www-form-urlencoded</code> 时，一个典型的自定义回调数据（<a href="#CallbackParams">CallbackParams</a>）为：</p>
+
+<p><code>foo=bar&amp;size=$(fsize)&amp;etag=$(etag)&amp;w=$(imageInfo.width)&amp;h=$(imageInfo.height)&amp;exif=$(exif)</code></p></li>
+</ul>
+
+<p><a name="uploadToken-returnBody"></a></p>
+
+<p><strong>returnBody</strong></p>
+
+<p><code>returnBody</code> 字段和 <code>escape</code> 有着显著区别。当 uploadToken 开启 <code>escape</code> 选项后，允许客户端程序自定义回调参数，回调参数中可包含请求七牛云存储规定的API——<a href="/v3/api/words/#VarExpression">VarExpression</a>，并将API处理的结果以回调（callback）的方式发送給业务服务器。</p>
+
+<p>如果说 <code>escape</code> 是在文件上传成功后，是把回调七牛云存储指定API的处理结果返回給业务服务端。那么， <code>returnBody</code> 的设置则是把回调七牛API的处理结果返回給业务客户端。实事上的确如此，两者甚至可以并行。</p>
+
+<p>当給 uploadToken 设置 <code>returnBody</code> 字段后，<code>returnBody</code> 字段的值是一个标准的字符串，其值可包含请求七牛云存储规定的回调API（即 <a href="/v3/api/words/#VarExpression">VarExpression</a>），并将回调API处理的结果以 JSON 格式作为 HTTP Response 返回給客户端程序。</p>
+
+<p>一个典型的包含七牛云存储指定回调API的 <code>returnBody</code> 字段声明如下：</p>
+
+<pre><code>authInfo[&quot;returnBody&quot;] = `{
+    &quot;foo&quot;: &quot;bar&quot;, 
+    &quot;size&quot;: $(fsize), 
+    &quot;hash&quot;: $(etag), 
+    &quot;w&quot;: $(imageInfo.width), 
+    &quot;h&quot;: $(imageInfo.height), 
+    &quot;color&quot;: $(exif.ColorSpace.val)
+}`
+</code></pre>
+
+<p>假使如上，当一个用户在 iOS 端用包含该 <code>returnBody</code> 字段的 uploadToken 成功上传一张图片，那么该 iOS 端程序将收到如下一段 HTTP Response 应答：</p>
+
+<pre><code>HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: no-store
+Response Body: {
+    &quot;foo&quot;: &quot;bar&quot;, 
+    &quot;size&quot;: 214513, 
+    &quot;hash&quot;: &quot;Fh8xVqod2MQ1mocfI4S4KpRL6D98&quot;, 
+    &quot;w&quot;: 640,
+    &quot;h&quot;: 480,
+    &quot;color&quot;: &quot;sRGB&quot;
+}
+</code></pre>
+
+<p>七牛云存储指定的回调API参数可参考 <a href="/v3/api/words/#VarExpression">VarExpression</a> 。</p>
+
+<p><a name="uploadToken-asyncOps"></a></p>
+
+<p><strong>asyncOps</strong></p>
+
+<p><code>asyncOps</code> 预转示例参见如下说明。</p>
+
+<p>==上传==</p>
+
+<ol>
+<li>假定 <code>asyncOps = &quot;avthumb/mp3/ar/44100/ab/32k;avthumb/mp3/aq/6/ar/16000&quot;</code></li>
+<li>以此生成带有预转功能的上传授权凭证（UploadToken）</li>
+<li>向七牛云存储上传一个 aac 格式的音频文件</li>
+<li>传成功后，服务器会对这个 aac 音频文件异步地做如下两个预转操作
+
+<ul>
+<li><code>avthumb/mp3/ar/44100/ab/32k</code></li>
+<li><code>avthumb/mp3/aq/6/ar/16000</code></li>
+</ul></li>
+</ol>
+
+<p>==下载==</p>
+
+<p>依然可以通过 <code>http://&lt;绑定域名&gt;/&lt;key&gt;</code> 的形式下载：</p>
+
+<ul>
+<li><code>http://&lt;bucket&gt;.qiniudn.com/&lt;key&gt;?avthunm/mp3/ar/44100/ab/32k</code></li>
+<li><code>http://&lt;bucket&gt;.qiniudn.com/&lt;key&gt;?avthumb/mp3/aq/6/ar/16000</code></li>
+</ul>
+
+<p>如果之前上传已经成功做完预转，那么此次下载就不需要转换，将会直接下载预转后的结果文件。</p>
+
+<p>图片、视频预转类似，开发者需要熟悉七牛云存储 <a href="/v3/api/foimg/">图像处理接口</a> 和 <a href="/v3/api/avfmt/">音视频处理接口</a> 。</p>
+
+<p>注意：预转后的下载链接不一定是问号传参形式，如果预转指令有定义别名，同样可以使用别名的友好URL风格形式访问。</p>
+
+<p><strong>步骤2</strong></p>
+
+<ul>
+<li><code>authInfo</code> 数据结构首先必须转成标准的 <a href="http://json.org/">JSON</a> 格式。</li>
+<li>将该JSON标准格式的元数据经过 <a href="/v3/api/words/#URLSafeBase64Encode">urlsafe_base64_encode</a> 编码。</li>
+</ul>
+
+<p><strong>步骤3</strong></p>
+
+<ul>
+<li>通过 <code>hmac_sha1</code> 签名算法，将将编码后的元数据经过私钥（secretKey）进行计算签名</li>
+</ul>
+
+<p><strong>步骤4</strong></p>
+
+<ul>
+<li>将签名摘要值进行 <code>urlsafe_base64_encode()</code> 安全编码</li>
+</ul>
+
+<p><strong>步骤5</strong></p>
+
+<ul>
+<li>将公钥（accessKey）、签名后且已编码的摘要值（authDigestEncoded）、已编码的元数据（authInfoEncoded）用冒号（:）进行字符串拼接，生成上传授权凭证 <code>uploadToken</code>。</li>
+</ul>
+
+<p><a name="upload-token-examples"></a></p>
+
+<h5>2.1.2 样例</h5>
+
+<p>生成 uploadToken 样例代码可参考：</p>
+
+<ul>
+<li><p>Python - <a href="https://github.com/qiniu/python-sdk/blob/master/qbox/uptoken.py">https://github.com/qiniu/python-sdk/blob/master/qbox/uptoken.py</a></p></li>
+
+<li><p>Ruby - <a href="https://github.com/qiniu/ruby-sdk/blob/master/lib/qiniu/tokens/upload_token.rb">https://github.com/qiniu/ruby-sdk/blob/master/lib/qiniu/tokens/upload_token.rb</a></p></li>
+
+<li><p>PHP - <a href="https://github.com/qiniu/php5-sdk/blob/master/qbox/authtoken.php">https://github.com/qiniu/php5-sdk/blob/master/qbox/authtoken.php</a></p></li>
+</ul>
+
+<p><a name="upload-file"></a></p>
+
+<h4>2.2 直传文件</h4>
+
+<p><a name="upload-file-by-multipart"></a></p>
+
+<h5>2.2.1 API（multipart/form-data）</h5>
+
+<p>请求包，<code>multipart/form-data</code> 格式：</p>
+
+<pre><code>POST http://up.qbox.me/upload
+Content-Type: multipart/form-data; boundary=&lt;Boundary&gt;
+
+&lt;Boundary&gt;
+Content-Disposition: form-data; name=&quot;auth&quot;
+
+&lt;UploadToken&gt;
+&lt;Boundary&gt;
+Content-Disposition: form-data; name=&quot;action&quot;
+
+&lt;PutAction&gt;
+&lt;Boundary&gt;
+Content-Disposition: form-data; name=&quot;file&quot;; filename=&quot;&lt;LocalFileName&gt;&quot;
+Content-Type: &lt;ContentType&gt;
+
+&lt;FileContent&gt;
+&lt;Boundary&gt;
+Content-Disposition: form-data; name=&quot;params&quot;
+
+&lt;CustomData&gt;
+</code></pre>
+
+<p>返回包(JSON)：</p>
+
+<pre><code>HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: no-store
+Response Body: {
+    hash: &lt;FileETag string&gt;
+}
+</code></pre>
+
+<p><strong>请求参数详解</strong></p>
+
+<p>此 <code>multipart/form-data</code> 请求包需传递三个必要参数，他们分别是 <code>auth</code>、<code>action</code> 和 <code>file</code> 。</p>
+
+<p><strong>auth</strong></p>
+
+<p><code>auth</code> 字段的值即 <a href="#upload-token">上传授权凭证(uploadToken)</a> 的值：<code>accessKey:authDigest:authInfoEncoded</code>。</p>
+
+<p><a name="upload-action"></a></p>
+
+<p><strong>action</strong></p>
+
+<p><code>action=&lt;PutAction&gt;</code> 是要执行的上传行为，表示向具体的资源表里新建一个条目。具体规格如下：</p>
+
+<pre><code>action=&quot;/rs-put/&lt;EncodedEntryURI&gt; \
+        /mimeType/&lt;EncodedMimeType&gt; \
+        /meta/&lt;EncodedCustomMeta&gt; \
+        /crc32/&lt;FileCRC32Checksum&gt; \
+        /rotate/&lt;Rotate&gt;&quot;
+</code></pre>
+
+<p>反斜杠（\）因排版换行需要，实际情况下请忽略。</p>
+
+<p>若尖括号包裹的字段（<code>&lt;...&gt;</code>）不传入，相应的前缀也不必传入。比如当不传入 <code>&lt;EncodedCustomMeta&gt;</code>, <code>&lt;FileCRC32Checksum&gt;</code> 和 <code>&lt;Rotate&gt;</code> 时：</p>
+
+<pre><code>action=&quot;/rs-put/&lt;EncodedEntryURI&gt;/mimeType/&lt;EncodedMimeType&gt;&quot;
+</code></pre>
+
+<p><code>action</code> 字段的值至少是 <code>/rs-put/&lt;EncodedEntryURI&gt;</code> ，其他字段可选。以下为各个字段的详细解释。</p>
+
+<ul>
+<li><a href="/v3/api/words/#EncodedEntryURI">EncodedEntryURI</a> 定义了具体的 Bucket 和 Key，必须项。</li>
+</ul>
+
+<p>注意：同一存储空间（Bucket）下，已存在与当前上传条目名称（<a href="/v3/api/words/#EncodedEntryURI">EncodedEntryURI</a> 元素中的 <a href="/v3/api/words/#EntryURI">Key</a>）相同的条目时，若当前上传文件内容与原有文件内容一致，则返回成功响应；若文件内容不一致，则上传失败，并返回失败响应。</p>
+
+<ul>
+<li><p><a href="/v3/api/words/#EncodedMimeType">EncodedMimeType</a> 表明文件的 MIME 类型，缺省情况下为 <code>application/octet-stream</code>，可选项。</p></li>
+
+<li><p><a href="/v3/api/words/#EncodedCustomMeta">EncodedCustomMeta</a> 文件备注信息，可选项，一般不传入。</p></li>
+
+<li><p><a href="/v3/api/words/#FileCRC32Checksum">FileCRC32Checksum</a> 文件的 crc32 校验值，十进制整数，可选项。若不传此参数则不执行数据校验。</p></li>
+
+<li><p><code>Rotate</code> 上传图片时专用，特别适合移动设备拍照后直传。<code>&lt;Rotate&gt;</code> 值为 0 ：表示根据图像EXIF信息自动旋转；值为 1 : 右转90度；值为 2 :右转180度；值为 3 : 右转270度。可结合 <a href="#escape-expression">生成上传授权凭证 uploadToken 之 escape 参数详解</a> 搭配使用。</p></li>
+</ul>
+
+<p><strong>file</strong></p>
+
+<p><code>file=&lt;FileContent&gt;</code> 是要上传的具体文件内容，<code>&lt;FileContent&gt;</code> 则是要上传文件的二进制内容。</p>
+
+<p><a name="CallbackParams"></a></p>
+
+<p><strong>params</strong></p>
+
+<p><code>params</code> 用于文件上传成功后执行回调，七牛云存储服务器会向客户方的业务服务器 POST 这些指定的参数。一般可用于回传跟上传文件相关的具体信息，这样客户方的业务服务器会知道一个文件上传成功后以某条目名称记录到了七牛云存储的哪个空间（Bucket）里。</p>
+
+<p>比如，若生成 <a href="#upload-token">uploadToken</a> 中 <code>callbackBodyType</code> 为 <code>application/json</code> 时，<code>params</code> 可以是如下字符串的表达形式：</p>
+
+<pre><code>{bucket: &quot;&lt;BucketName&gt;&quot;, key: &quot;&lt;FileUniqKey&gt;&quot;, uid: &quot;&lt;customer&gt;&quot;}
+</code></pre>
+
+<p>若生成 <a href="#upload-token">uploadToken</a> 中 <code>callbackBodyType</code> 为 <code>application/x-www-form-urlencoded</code> 时，<code>params</code> 可以是如下字符串的表达形式：</p>
+
+<pre><code>bucket=&lt;BucketName&gt;&amp;key=&lt;FileUniqKey&gt;&amp;uid=&lt;customer&gt;
+</code></pre>
+
+<p>以上尖括号包裹的字段（<code>&lt;...&gt;</code>）代表具体的变量名称。</p>
+
+<p>七牛云存储允许文件上传成功后执行指定的 API 回调操作，参考 <a href="#escape-expression">生成上传授权凭证 uploadToken 之 escape 参数详解</a> 。</p>
+
+<p><a name="upload-file-by-html-form"></a></p>
+
+<h5>2.2.2 HTML表单形式直传</h5>
+
+<p>如果您觉得这个接口理解起来有难度，不妨以一种更简单的HTML Form结构来理解，以上接口描述等价于如下 HTML Form:</p>
+
+<pre><code>&lt;form method=&quot;POST&quot; enctype=&quot;multipart/form-data&quot; action=&quot;http://up.qbox.me/upload&quot;&gt;
+    &lt;input type=&quot;hidden&quot; name=&quot;auth&quot; value=&quot;{uploadToken}&quot; /&gt;
+    &lt;input type=&quot;hidden&quot; name=&quot;action&quot; value=&quot;/rs-put/{URLSafeBase64Encode({bucket}:{key})}&quot; /&gt;
+    &lt;input type=&quot;hidden&quot; name=&quot;params&quot; value=&quot;bucket={bucketName}&amp;key={fileUniqKey}&amp;k1=v1&amp;k2=v2...&quot; /&gt;
+    &lt;input type=&quot;hidden&quot; name=&quot;return_url&quot; value=&quot;http://DOMAIN/PATH?QUERY_STRING&quot; /&gt;
+    &lt;input name=&quot;file&quot; type=&quot;file&quot; /&gt;
+    &lt;input type=&quot;submit&quot; value=&quot;Upload File&quot; /&gt;
+&lt;/form&gt;
+</code></pre>
+
+<p>如果是采用如上 HTML 表单直传文件，倘若有入 <code>return_url</code> 字段，七牛云存储会在文件上传成功后执行301跳转，跳转的 URL 即 <code>return_url</code> 指定的值。</p>
+
+<p><a name="callback-after-uploaded"></a></p>
+
+<h4>2.3 回调处理</h4>
+
+<p><a name="callback-logic"></a></p>
+
+<h5>2.3.1 回调逻辑</h5>
+
+<p>七牛云存储允许一个文件直传成功后向指定的远程服务器执行回调。在 <a href="#upload-token">生成上传授权凭证(uploadToken)</a> 这一过程中，元数据（authInfo）包含的 <code>callbackUrl</code> 字段即用于指定远程回调地址。在 <a href="#upload-file">直传文件</a> 这一过程中，<code>multipart/form-data</code> 请求包中的 <code>params</code> 字段提供了回调请求的具体数据。如果 <code>callbackUrl</code> 和 <code>params</code> 都有指定的情况下，那么文件上传成功后，七牛云存储服务端即会将 <code>params</code> 字段的值以 HTTP POST 的方式发送到指定的 <code>callbackUrl</code>。如果 <a href="#upload-token">生成上传授权凭证(uploadToken)</a> 这一过程中有指定 <code>callbackBodyType</code>，七牛云存储服务端执行远程回调发送 HTTP 请求的 Content-Type 将会是 <code>callbackBodyType</code> 提供的值，一般会是 <code>Content-Type: application/x-www-form-urlencoded</code>。</p>
+
+<p><a name="callback-as-proxy"></a></p>
+
+<h5>2.3.2 作为代理</h5>
+
+<p>七牛云存储的回调处理还有代理作用。执行远程回调后，如果客户方的业务服务器返回的 HTTP Response Body 为标准的 <a href="http://json.org/">JSON</a> 格式，并且 <code>HTTP Headers[&quot;Content-Type&quot;] = 'application/json'</code>，那么七牛云存储服务端会将其 Response Body 按照 JSON 格式返回给客户方的客户端程序。</p>
+
+<p><a name="resumable-upload"></a></p>
+
+<h3>3. 断点续上传</h3>
+
+<p>七牛云存储提供断点续上传功能。该功能将单个文件分割成数个固定大小的块并发上传，可以在实现断点续传的同时加快上传速度（并发上传）。</p>
+
+<p><a name="resumable-upload-keywords"></a></p>
+
+<h4>3.1 术语</h4>
+
+<ol>
+<li><p>上传服务器（Up-Server）：提供断点续上传功能的服务器，负责启动新的上传过程、接受上传内容、合并生成最终上传文件。</p></li>
+
+<li><p>业务服务器（Biz-Server）：七牛云存储的客户的业务服务器，负责上传操作鉴权、分配操作策略、生成UpToken、驱动上传端启动上传。</p></li>
+
+<li><p>上传授权凭证（UpToken）：由业务服务器使用AccessKey和SecretKey，对操作策略进行数字签名防伪而生成的上传凭证。参考：<a href="#upload-token">生成上传授权凭证</a></p></li>
+
+<li><p>操作策略（Policy）：由业务服务器填写、由上传服务器执行的操作信息。参考：<a href="#upload-token">生成上传授权凭证</a>
+4.1. 操作域（Scope）：1）空，表示可以上传到任意Bucket（仅限于新增文件）；2) &ldquo;Bucket&rdquo;，表示限定只能传到该Bucket（仅限于新增文件）；3) &ldquo;Bucket:Key&rdquo;，表示限定特定的文档，可新增或修改文件;
+4.2. 超时时限（DeadLine）：上传授权凭证的有效时间，单位是秒;
+4.3. 回调URL（CallbackURL）：如果指定，在合并文件后，由上传服务器调用此URL，以通知业务服务器做相应处理;
+4.4. 返回URL（ReturnURL）：如果指定，在合并文件后，由上传服务器重定向到此URL，以通知客户端继续表单处理流程。</p></li>
+
+<li><p>上传端（Up-Client）：七牛云存储的客户的业务终端，负责提出、实施上传。</p></li>
+
+<li><p>分割块（Block）：分割块是以指定大小（一般为4MB）为单位分割待传文件得到的内容块。最后一个分割块可以小于4MB。不同分割块可以乱序并行上传。所有分割块上传完毕后由服务器进行内容排序合并。</p></li>
+
+<li><p>上传块（Chunk）：上传块是对分割块的进一步切分，可以由用户自行设定大小，以适应不同网络环境的限制。上传块必须顺序上传，同时根据需求保存上传过程中的上下文信息、同一分割块已传部分的校验值，以便在断点续传时恢复操作环境。</p></li>
+
+<li><p>上下文信息（Context）：服务器成功保存上传块后返回的操作环境信息，可保存在上传端本地，以便恢复操作环境。上传开始后，每个分割块都有自己的上下文信息。上传端不能修改接收到的上下文信息。</p></li>
+
+<li><p>校验值（CheckSum）：服务器成功保存上传块后返回的、当前分割块的已传部分的校验值，可保存在上传端本地，用于最后合并文件。上传开始后，每个分割块都有自己的校验值。上传端不能修改接收到的校验值。</p></li>
+</ol>
+
+<p><a name="resumable-upload-model"></a></p>
+
+<h4>3.2 工作模型</h4>
+
+<pre><code>                                                    |
+  CUSTOM                                            | QINIU
+                                                    |
+        +------------+                              |     +------------+
+        |            |    6.1 Invoke CallbackURL    |     |            |
+        |            | &lt;----------------------------+---- |            |
+        | Biz-Server |                              |     | Up-Server  |
+        |            | -----------------------------+---&gt; |            |
+        |            |    6.2 Return Result         |     |            |
+        +------------+                              |     +------------+
+             ^  |                                   |       ^ |    ^ |
+             |  |                                   |       | |    | |
+             |  |                                   |       | |    | |
+  1 Request  |  | 2 Make Policy/                    |       | |    | |
+    Upload   |  |   UpToken                         |       | |    | |
+             |  |                                   |       | |    | |
+  -----------+--+-----------                        |       | |    | |
+             |  |                                   |       | |    | |
+  END-USER   |  |                                   |       | |    | |
+             |  V                                   |       | |    | |
+        +------------+    4.1 Upload Blocks         |       | |    | |
+        |            | -----------------------------+-------/ |    | |
+        |            | &lt;----------------------------+---------/    | |
+        |            |    4.2 Return Context/       |              | |
+        |            |        CheckSum              |              | |
+        | Up-Client  |                              |              | |
+        |            |                              |              | |
+        |            |    5   Make File             |              | |
+  3 Split File       | -----------------------------+--------------/ |
+        |            | &lt;----------------------------+----------------/
+        +------------+    6.3 Return Result         |
+                                                    |
+                                                    |
+</code></pre>
+
+<p><a name="resumable-upload-workflow"></a></p>
+
+<h4>3.3 流程</h4>
+
+<ol>
+<li><p>请求断点续上传（Request Upload）：由上传端发起，向业务服务器申请执行断点续上传;</p></li>
+
+<li><p>生成操作策略/上传凭证（Make Policy/UpToken）：业务服务器对上传端进行鉴权/签名上传凭证/授权;</p></li>
+
+<li><p>分割文件（Split File）：上传端获得授权后，以指定块大小（一般为4MB）为单位，将待传文件分割为数个分割块;</p></li>
+
+<li><p>上传分割块（Upload Blocks）：上传端将单个分割块至上传服务器（可以并发上传不同的分割块，加快上传速度）。每个分割块的上传过程必须顺序完成（串行上传每个上传块）。上传服务器会针对接受到的上传块，返回对应分割块的已上传部分的上下文信息和校验码;</p></li>
+
+<li><p>合并文件（Make File）：所有分割块均成功上传完毕后，由上传端通知上传服务器将其合并成原上传对象文件;</p></li>
+
+<li><p>若指定CallbackURL，上传服务器在合并文件后会调用此URL，通知业务服务器做相应处理; 否则返回响应结果。</p></li>
+</ol>
+
+<p>注：在第4步的任何节点均可终止（Abort）上传分割块，或在断点处根据上下文信息恢复上传分割块。</p>
+
+<p><a name="resumable-upload-api"></a></p>
+
+<h4>3.4 API</h4>
+
+<p><a name="resumable-upload-authorization"></a></p>
+
+<h5>3.4.1 授权</h5>
+
+<p>授权信息在 HTTP 头部表现如下：</p>
+
+<pre><code>Authorization UpToken &lt;UploadToken&gt;
+</code></pre>
+
+<p>授权操作需要在 HTTP Headers 中新增一个名为 Authorization 的字段，并传入 <a href="#upload-token">UploadToken</a> 作为值。</p>
+
+<p>上述授权格式等价于：</p>
+
+<pre><code>Authorization UpToken accessKey:authDigest:authInfoEncoded
+</code></pre>
+
+<p><code>&lt;UploadToken&gt;</code> 的细节可以参考文档：<a href="#upload-token">生成上传授权凭证</a></p>
+
+<p><a name="resumable-upload-mkblk"></a></p>
+
+<h5>3.4.2 创建分割块（Block）并上传第一个数据块（Chunk）</h5>
+
+<pre><code>  HTTP/1.1
+  POST http://up.qbox.me/mkblk/&lt;BlockSize&gt;
+  Content-Type: application/octet-stream
+  Request Headers: {
+      Authorization: UpToken &lt;UploadToken&gt;
+  }
+  Request Body: &lt;First-Chunk-Binary&gt;
+
+  HTTP/1.1 200 OK
+  Content-Type: application/json
+  Cache-Control: no-store
+  Response Body: {
+      ctx: &lt;BlockCtx string&gt;,
+      checksum: &lt;BlockChecksum string&gt;,
+      crc32: &lt;ChunkCrc32 int&gt;,
+      host: &lt;SelectedUpHost string&gt; // 后续的 bput, rs-mkfile 等请求要求发到此 host
+  }
+</code></pre>
+
+<p><a name="resumable-upload-bput"></a></p>
+
+<h5>3.4.3 上传分割块（Block）中的数据块（Chunk）</h5>
+
+<pre><code>  HTTP/1.1
+  POST &lt;SelectedUpHost&gt;/bput/&lt;BlockCtx&gt;/&lt;Offset&gt;
+  Content-Type: application/octet-stream
+  Request Headers: {
+      Authorization: UpToken &lt;UploadToken&gt;
+  }
+  Request Body: &lt;Next-Chunk-Binary&gt;
+
+  HTTP/1.1 200 OK
+  Content-Type: application/json
+  Cache-Control: no-store
+  Response Body: {
+      ctx: &lt;BlockCtx string&gt;,
+      checksum: &lt;BlockChecksum string&gt;,
+      crc32: &lt;ChunkCrc32 int&gt;,
+      host: &lt;SelectedUpHost string&gt;
+  }
+</code></pre>
+
+<p><a name="resumable-upload-mkfile"></a></p>
+
+<h5>3.4.4 合并文件</h5>
+
+<pre><code>  HTTP/1.1
+  POST &lt;SelectedUpHost&gt;/rs-mkfile/&lt;EncodedEntryURI&gt;/fsize/&lt;Fsize&gt; \
+                                  /mimeType/&lt;EncodedMimeType&gt; \
+                                  /meta/&lt;EncodedCustomMeta&gt; \
+                                  /customer/&lt;CustomerId&gt; \
+                                  /params/&lt;EncodedCallbackParams&gt; \
+                                  /rotate/&lt;Rotate&gt;
+  Content-Type: text/plain
+  Request Headers: {
+      Authorization: UpToken &lt;UploadToken&gt;
+  }
+  Request Body: &lt;Ctx-Array&gt; // 以 “,” 分隔的 ctx string 列表，注意 Content-Type: text/plain
+
+  HTTP/1.1 200 OK
+  Content-Type: application/json
+  Cache-Control: no-store
+  Response Body: {
+      hash: &lt;FileEtag string&gt;
+  }
+</code></pre>
+
+<p>其中反斜杠（\）因排版换行需要，实际情况请忽略。</p>
+
+<p>若尖括号包裹的字段（<code>&lt;...&gt;</code>）不传入，相应的前缀也不必传入。比如当不传入 <code>&lt;EncodedCustomMeta&gt;</code>, <code>&lt;CustomerId&gt;</code> 和 <code>&lt;Rotate&gt;</code> 时，POST 的 URL 则为：</p>
+
+<pre><code>http://up.qbox.me/rs-mkfile/&lt;EncodedEntryURI&gt; \
+                           /fsize/&lt;Fsize&gt; \
+                           /mimeType/&lt;EncodedMimeType&gt; \
+                           /params/&lt;EncodedCallbackParams&gt;
+</code></pre>
+
+<p>其中反斜杠（\）因排版换行需要，实际情况请忽略。</p>
+
+<p><strong>URL参数详解</strong></p>
+
+<ul>
+<li><a href="/v3/api/words/#EncodedEntryURI">EncodedEntryURI</a> 定义了具体的 Bucket 和 Key，必须项。</li>
+</ul>
+
+<p>注意：同一存储空间（Bucket）下，已存在与当前上传条目名称（<a href="/v3/api/words/#EncodedEntryURI">EncodedEntryURI</a> 元素中的 <a href="/v3/api/words/#EntryURI">Key</a>）相同的条目时，若当前上传文件内容与原有文件内容一致，则返回成功响应；若文件内容不一致，则上传失败，并返回失败响应。</p>
+
+<ul>
+<li><p><code>Fsize</code> 文件大小，单位 Byte，必须项。</p></li>
+
+<li><p><a href="/v3/api/words/#EncodedMimeType">EncodedMimeType</a> 表明文件的 MIME 类型，缺省情况下为 <code>application/octet-stream</code>，可选项。</p></li>
+
+<li><p><a href="/v3/api/words/#EncodedCustomMeta">EncodedCustomMeta</a> 文件备注信息，可选项，一般不传入。</p></li>
+
+<li><p><code>CustomerId</code> 给上传的文件添加唯一属主标识，特殊场景下非常有用，比如根据终端用户标识给图片打水印时可以传入终端用户ID。该参数为可选项。</p></li>
+
+<li><p><code>EncodedCallbackParams</code> 指定文件上传成功后七牛云存储向客户方的业务服务器执行回调发送的数据，详细解释可以参考 <a href="#CallbackParams">CallbackParams</a>。该参数的值需经过 <a href="/v3/api/words/#URLSafeBase64Encode">URLSafeBase64Encode</a> 编码。该参数为可选项。</p></li>
+
+<li><p><code>Rotate</code> 上传图片时专用，特别适合移动设备拍照后直传。<code>&lt;Rotate&gt;</code> 值为 0 ：表示根据图像EXIF信息自动旋转；值为 1 : 右转90度；值为 2 :右转180度；值为 3 : 右转270度。可结合 <a href="#escape-expression">生成上传授权凭证 uploadToken 之 escape 参数详解</a> 搭配使用。该参数为可选项。</p></li>
+</ul>
+
+<p><a name="resumable-upload-examples"></a></p>
+
+<h4>3.5 样例</h4>
+
+<p>样例程序：</p>
+
+<ul>
+<li>C/C++ - <a href="https://github.com/qiniu/c-sdk/blob/master/qbox/up.c">https://github.com/qiniu/c-sdk/blob/master/qbox/up.c</a></li>
+<li>Java - <a href="https://github.com/qiniu/java-sdk/blob/master/src/main/java/com/qiniu/qbox/up/UpService.java">https://github.com/qiniu/java-sdk/blob/master/src/main/java/com/qiniu/qbox/up/UpService.java</a></li>
+<li>Perl - <a href="https://github.com/qiniu/perl-sdk/blob/master/lib/QBox/UP.pm">https://github.com/qiniu/perl-sdk/blob/master/lib/QBox/UP.pm</a></li>
+<li>Ruby - <a href="https://github.com/qiniu/ruby-sdk/blob/master/lib/qiniu/rs/up.rb">https://github.com/qiniu/ruby-sdk/blob/master/lib/qiniu/rs/up.rb</a></li>
+</ul>
+
+<p>参考资料：</p>
+
+<ul>
+<li><a href="/v3/sdk/c/#rs-put-blocks">C/C++ SDK 使用指南——断点续上传</a></li>
+</ul>
+
+<p><a name="download"></a></p>
+
+<h3>4. 下载文件</h3>
+
+<p>七牛云存储提供以下几种方式下载文件：</p>
+
+<ul>
+<li>公有资源下载。绑定域名，以公开外链的方式提供下载。</li>
+<li>私有资源下载。生成带下载授权凭证的URL，文件可公开临时匿名下载，但链接有生命周期，可自定义该有效期。</li>
+<li>源文件保护。限制直接访问源文件，只限访问预处理后的目标文件。比如限制访问原图，只可访问打水印后的缩略图。</li>
+<li>防盗链。设置黑名单/白名单，仅限/或拒绝特定的主机可提供访问或下载。</li>
+</ul>
+
+<p><a name="public-download"></a></p>
+
+<h4>4.1 公有资源下载</h4>
+
+<p>公有资源下载/访问格式如下：</p>
+
+<pre><code>http://&lt;绑定域名&gt;/&lt;key&gt;
+</code></pre>
+
+<p>可以在 <a href="https://dev.qiniutek.com/buckets">七牛云存储开发者自助网站</a> 进行域名绑定操作。</p>
+
+<p><a name="private-download"></a></p>
+
+<h4>4.2 私有资源下载</h4>
+
+<p>私有资源下载即表示生成带下载授权凭证的URL。私有(private)是bucket的一个属性，一个私有bucket中的资源为私有资源。私有资源不可匿名下载。</p>
+
+<p>新创建的bucket默认为私有，也可以将某个bucket设为公有，公有bucket中的资源为公有资源，公有资源可以匿名下载。</p>
+
+<p>可以使用以下命令将<bucket>设为私有：</p>
+
+<pre><code>qboxrsctl private &lt;bucket&gt; 1
+</code></pre>
+
+<p>可以使用以下命令将<bucket>设为公开：</p>
+
+<pre><code>qboxrsctl private &lt;bucket&gt; 0
+</code></pre>
+
+<p><strong>私有资源的下载方式</strong></p>
+
+<p>私有资源无法匿名下载。下载私有资源需要带有下载授权，下载授权以download token的方式表达。</p>
+
+<p>假设某bucket为私有，则</p>
+
+<ul>
+<li><code>http://&lt;bucket&gt;.qiniudn.com/x.jpg</code> 无法下载。</li>
+<li><code>http://&lt;bucket&gt;.qiniudn.com/x.jpg?token=&lt;token&gt;</code>，在 <code>&lt;token&gt;</code> 合法的条件下，可以正常下载。</li>
+</ul>
+
+<p><strong>下载授权凭证（downloadToken）的构成</strong></p>
+
+<p>downloadToken 由三部分组成：</p>
+
+<pre><code>downloadToken = &quot;&lt;access_key&gt;:&lt;checksum&gt;:&lt;scope&gt;&quot;
+</code></pre>
+
+<p>注意：尖括号“&lt;&gt;”表示要替换的内容，不可在实际字符串中出现。</p>
+
+<p><code>checksum</code> 的构成为：</p>
+
+<pre><code>checksum = &quot;urlsafe_base64_encode(&lt;hmac&gt;)&quot;
+
+hmac = &quot;sha1_hmac(&lt;scope&gt;, &lt;secret_key&gt;)&quot;
+</code></pre>
+
+<p><code>scope</code> 的构成为：</p>
+
+<pre><code>scope = &quot;urlsafe_base64_encode(&lt;json_scope&gt;)&quot;
+</code></pre>
+
+<p><code>urlsafe_base64_encode()</code> 函数的规格参考：<a href="/v3/api/words/#URLSafeBase64Encode">URLSafeBase64Encode</a></p>
+
+<p><code>json_scope</code> 是一个 JSON 标准格式的字符串：</p>
+
+<pre><code>{&quot;E&quot;: &lt;deadline&gt;, &quot;S&quot;: &lt;pattern&gt;}
+</code></pre>
+
+<p><code>deadline</code> 为一个时间点，数值是1970年1月1日0点到此时间点的秒数，这个时间点之后，资源无法下载。</p>
+
+<p><code>pattern</code> 为URL匹配模式（非 <code>http://</code> 开头），下载URL匹配该模式不成功的话，资源无法下载。</p>
+
+<p><a name="download-token-pattern"></a></p>
+
+<p>pattern 详解：</p>
+
+<table>
+<thead>
+<tr>
+<td>模式</td>
+<td>说明</td>
+<td>示例</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><code>*</code></td>
+<td>匹配所有不含&rdquo;/&ldquo;字符的子串</td>
+<td><code>dl.example.com/*-small.jpg</code></td>
+</tr>
+
+<tr>
+<td><code>?</code></td>
+<td>匹配所有非&rdquo;/&ldquo;的字符</td>
+<td><code>dl.example.com/a?.jpg</code></td>
+</tr>
+
+<tr>
+<td><code>abc</code></td>
+<td>匹配字符串 &ldquo;abc&rdquo;, (&rsquo;*&lsquo;, &lsquo;?&rsquo;, &lsquo;\&rsquo;, &lsquo;[&rsquo; 除外)</td>
+<td><code>dl.example.com/abc.jpg</code></td>
+</tr>
+
+<tr>
+<td><code>abc\\?d</code></td>
+<td>匹配字符串 &ldquo;<code>abc?d</code>&rdquo;, 双斜杠表示转义，可以包含特殊字符</td>
+<td><code>dl.example.com/abc\\?d=xxx</code></td>
+</tr>
+
+<tr>
+<td><code>[abc]</code></td>
+<td>匹配字符 a, b 或者 c</td>
+<td><code>dl.example.com/[abc].jpg</code></td>
+</tr>
+
+<tr>
+<td><code>[^abc]</code></td>
+<td>匹配除 a, b 或者 c 以外的字符</td>
+<td><code>dl.example.com/[^abc].jpg</code></td>
+</tr>
+
+<tr>
+<td><code>[a-z]</code></td>
+<td>匹配 a-z 范围以内的任意字符</td>
+<td><code>dl.example.com/[a-zA-Z0-9].jpg</code></td>
+</tr>
+
+<tr>
+<td><code>[^a-z]</code></td>
+<td>匹配 a-z 范围以外的任意字符</td>
+<td><code>dl.example.com/[^a-z].jpg</code></td>
+</tr>
+
+<tr>
+<td><code>[abc\\?d]</code></td>
+<td>匹配字符 a, b, c, <code>?</code> 或者 d</td>
+<td><code>dl.example.com/[abc\\?d]</code></td>
+</tr>
+</tbody>
+</table>
+
+<p><a name="set-protected"></a></p>
+
+<h4>4.3 设置源文件(比如原图)保护</h4>
+
+<p>您可以在 <a href="https://dev.qiniutek.com/buckets">七牛云存储开发者自助网站上为指定的存储空间设置源文件保护</a>。</p>
+
+<p>设置原图(或源文件)保护后，其原图(或源文件)为私有。不能通过如下方式公开访问：</p>
+
+<ul>
+<li>http://绑定域名/文件key或相对路径</li>
+<li>http://绑定域名/文件key或相对路径?操作符/操作符参数</li>
+</ul>
+
+<p>而只能通过如下方式进行公开访问（其中加号“+”忽略）：</p>
+
+<ul>
+<li>http://绑定域名/文件key或相对路径 + 已设定的连接符 + 已设定的操作符规格别名</li>
+</ul>
+
+<p>其中，已设定的连接符可以是缩略图间隔标志符，已设定的操作符规格别名可以是缩略图样式名。</p>
+
+<pre><code>http://&lt;Domain&gt;/&lt;Key&gt;&lt;Separator&gt;&lt;StyleName&gt;
+</code></pre>
+
+<p><a name="pub-access-mode"></a></p>
+
+<h5>4.3.1 为指定的存储空间设置保护模式</h5>
+
+<pre><code>  HTTP/1.1
+  POST http://pu.qbox.me:10200/accessMode/&lt;Bucket&gt;/mode/&lt;ProtectedMode&gt;
+  Content-Type: application/x-www-form-urlencoded
+  Request Headers: {
+      Authorization: QBox &lt;AccessToken&gt;
+  }
+
+  HTTP/1.1 200 OK
+  Content-Type: application/json
+  Cache-Control: no-store
+</code></pre>
+
+<p><strong>请求参数</strong></p>
+
+<p><code>&lt;Bucket&gt;</code>
+: 指定目标存储空间名称，必须，字符串类型。</p>
+
+<p><code>&lt;ProtectedMode&gt;</code>
+: 是否开启保护，可选值为数字 0 或者 1 。</p>
+
+<p><a name="pub-separator"></a></p>
+
+<h5>4.3.2 设置友好URL访问中的连接符</h5>
+
+<p>以下操作在存储空间 <code>&lt;ProtectedMode&gt;=1</code> 时有效。</p>
+
+<pre><code>  HTTP/1.1
+  POST http://pu.qbox.me:10200/separator/&lt;Bucket&gt;/sep/&lt;EncodedSeparator&gt;
+  Content-Type: application/x-www-form-urlencoded
+  Request Headers: {
+      Authorization: QBox &lt;AccessToken&gt;
+  }
+
+  HTTP/1.1 200 OK
+  Content-Type: application/json
+  Cache-Control: no-store
+</code></pre>
+
+<p><strong>请求参数</strong></p>
+
+<p><code>&lt;Bucket&gt;</code>
+: 指定目标存储空间名称，必须，字符串类型。</p>
+
+<p><code>&lt;EncodedSeparator&gt;</code>
+: 分割符，字符串类型类型，比如可以是 感叹号!、地址符（@）、美元符（$）、中划线（-）、下划线（_）、点（.）等。经过 <a href="/v3/api/words/#URLSafeBase64Encode">URLSafeBase64Encode</a> 编码。</p>
+
+<p><a name="pub-style"></a></p>
+
+<h5>4.3.3 设置URL友好的风格样式名</h5>
+
+<p>以下操作在存储空间 <code>&lt;ProtectedMode&gt;=1</code> 时有效。</p>
+
+<pre><code>  HTTP/1.1
+  POST http://pu.qbox.me:10200/style/&lt;Bucket&gt;/name/&lt;EncodedStyleName&gt;/style/&lt;EncodedStyle&gt;
+  Content-Type: application/x-www-form-urlencoded
+  Request Headers: {
+      Authorization: QBox &lt;AccessToken&gt;
+  }
+
+  HTTP/1.1 200 OK
+  Content-Type: application/json
+  Cache-Control: no-store
+</code></pre>
+
+<p><strong>请求参数</strong></p>
+
+<p><code>&lt;Bucket&gt;</code>
+: 指定目标存储空间名称，必须，字符串类型。</p>
+
+<p><code>&lt;EncodedStyleName&gt;</code>
+: 风格样式名，字符串类型，经过 <a href="/v3/api/words/#URLSafeBase64Encode">URLSafeBase64Encode</a> 编码。</p>
+
+<p><code>&lt;EncodedStyle&gt;</code>
+: 样式定义，字符串类型，经过 <a href="/v3/api/words/#URLSafeBase64Encode">URLSafeBase64Encode</a> 编码。</p>
+
+<p>若请求成功，文件可以如下链接形式进行访问：</p>
+
+<pre><code>[GET] http://&lt;Domain&gt;/&lt;Key&gt;&lt;Separator&gt;&lt;StyleName&gt; HTTP/1.1 200 OK
+</code></pre>
+
+<p><a name="pub-unstyle"></a></p>
+
+<h5>4.3.4 取消URL友好风格的样式名访问</h5>
+
+<p>以下操作在存储空间 <code>&lt;ProtectedMode&gt;=1</code> 时有效。</p>
+
+<pre><code>  HTTP/1.1
+  POST http://pu.qbox.me:10200/unstyle/&lt;Bucket&gt;/name/&lt;EncodedStyleName&gt;
+  Content-Type: application/x-www-form-urlencoded
+  Request Headers: {
+      Authorization: QBox &lt;AccessToken&gt;
+  }
+
+  HTTP/1.1 200 OK
+  Content-Type: application/json
+  Cache-Control: no-store
+</code></pre>
+
+<p><strong>请求参数</strong></p>
+
+<p><code>&lt;Bucket&gt;</code>
+: 指定目标存储空间名称，必须，字符串类型。</p>
+
+<p><code>&lt;EncodedStyleName&gt;</code>
+: 风格样式名，字符串类型，经过 <a href="/v3/api/words/#URLSafeBase64Encode">URLSafeBase64Encode</a> 编码。</p>
+
+<p>若请求成功，文件以如下链接形式进行访问将会出现404：</p>
+
+<pre><code>[GET] http://&lt;Domain&gt;/&lt;Key&gt;&lt;Separator&gt;&lt;StyleName&gt; 
+
+HTTP/1.1 404 Not Found
+</code></pre>
+
+<p><a name="anti-theft-chain"></a></p>
+
+<h4>4.4 防盗链设置</h4>
+
+<p>您可以在 <a href="https://dev.qiniutek.com/buckets">七牛云存储开发者自助网站上为指定的存储空间进行防盗链设置</a>。</p>
+
+<p><a name="uc-antiLeechMode"></a></p>
+
+<h5>4.4.1 设置防盗链模式</h5>
+
+<pre><code>  HTTP/1.1
+  POST http://uc.qbox.me/antiLeechMode
+  Content-Type: application/x-www-form-urlencoded
+  Request Headers: {
+      Authorization: QBox &lt;AccessToken&gt;
+  }
+  Request Body: {
+      bucket: &lt;BucketName string&gt;,
+      mode : &lt;Mode int&gt; // 0:n/a; 1:white list; 2:black list
+  }
+
+  HTTP/1.1 200 OK
+  Content-Type: application/json
+  Cache-Control: no-store
+</code></pre>
+
+<p><a name="uc-referAntiLeech"></a></p>
+
+<h5>4.4.2 更新防盗链记录值</h5>
+
+<pre><code>  HTTP/1.1
+  POST http://uc.qbox.me/referAntiLeech
+  Content-Type: application/x-www-form-urlencoded
+  Request Headers: {
+      Authorization: QBox &lt;AccessToken&gt;
+  }
+  Request Body: {
+      bucket: &lt;BucketName string&gt;,
+      mode : &lt;Mode int&gt; // 0:n/a; 1:white list; 2:black list
+      action: &lt;Action string&gt; // add | del
+      pattern: &lt;Pattern string&gt; // *.example.com | 12.34.56.*
+  }
+
+  HTTP/1.1 200 OK
+  Content-Type: application/json
+  Cache-Control: no-store
+</code></pre>
+
+<p><a name="download-if-notfound"></a></p>
+
+<h4>4.5 自定义 404 NotFound</h4>
+
+<p>可以上传一个应对HTTP 404出错处理的文件，当设置 <a href="#public-download">公有资源下载</a> 后，若公开的下载链接找不到该文件，即可使用上传的“自定义404文件”。要这么做，您只须在名为 action 的表单域中将 <a href="/v3/api/words/#EncodedEntryURI">EncodedEntryURI</a> 元素中的 <code>&lt;Key&gt;</code> 设置为固定字符串类型的值 <code>errno-404</code> 即可。</p>
+
+<p><a name="download-by-range-bytes"></a></p>
+
+<h4>4.6 断点续下载</h4>
+
+<p>断点续下载协议标准参考：<a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.35">http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.35</a></p>
+
+<p>七牛云存储按以上标准支持断点续下载，只需在 HTTP 请求下载链接的头部附带 <code>Range</code> 字段即可。</p>
+
+<pre><code>Range: bytes=&lt;first-byte-pos&gt;-&lt;last-byte-pos&gt;
+</code></pre>
+
+<p><strong>参数</strong></p>
+
+<p><code>&lt;first-byte-pos&gt;</code>
+: 起始位置，从数字零（0）开始计算。</p>
+
+<p><code>&lt;last-byte-pos&gt;</code>
+: 断点续下载中，最后一个字节所在的位置。</p>
+
+<p><a name="stat"></a></p>
+
+<h3>5. 查看文件基本属性信息</h3>
+
+<pre><code>  HTTP/1.1
+  POST http://rs.qbox.me/stat/&lt;EncodedEntryURI&gt;
+  Content-Type: application/x-www-form-urlencoded
+  Request Headers: {
+      Authorization: QBox &lt;AccessToken&gt;
+  }
+
+  HTTP/1.1 200 OK
+  Content-Type: application/json
+  Cache-Control: no-store
+  Response Body: {
+      hash: &lt;FileETag string&gt;,
+      fsize: &lt;FileSize int&gt;,
+      putTime: &lt;PutTime int64&gt;, // 文件上传时候的七牛云存储服务器时间
+      mimeType: &lt;MimeType string&gt;
+  }
+</code></pre>
+
+<p><strong>请求参数</strong></p>
+
+<p><code>&lt;EncodedEntryURI&gt;</code>
+: 指定的具体文件，必填。参考：<a href="/v3/api/words/#EncodedEntryURI">EncodedEntryURI</a></p>
+
+<p><a name="copy"></a></p>
+
+<h3>6. 复制文件</h3>
+
+<pre><code>  HTTP/1.1
+  POST http://rs.qbox.me/copy/&lt;EncodedEntryURISrc&gt;/&lt;EncodedEntryURIDest&gt;
+  Content-Type: application/x-www-form-urlencoded
+  Request Headers: {
+      Authorization: QBox &lt;AccessToken&gt;
+  }
+
+  HTTP/1.1 200 OK
+  Content-Type: application/json
+  Cache-Control: no-store
+</code></pre>
+
+<p><strong>请求参数</strong></p>
+
+<p><code>&lt;EncodedEntryURISrc&gt;</code>
+: 指定的具体的源文件，必填，<code>urlsafe_base64_encode(bucket:key)</code> 形式。参考：<a href="/v3/api/words/#EncodedEntryURI">EncodedEntryURI</a></p>
+
+<p><code>&lt;EncodedEntryURIDest&gt;</code>
+: 指定的具体的目标文件，必填，<code>urlsafe_base64_encode(bucket:key)</code> 形式。参考：<a href="/v3/api/words/#EncodedEntryURI">EncodedEntryURI</a></p>
+
+<p><a name="move"></a></p>
+
+<h3>7. 移动文件</h3>
+
+<pre><code>  HTTP/1.1
+  POST http://rs.qbox.me/move/&lt;EncodedEntryURISrc&gt;/&lt;EncodedEntryURIDest&gt;
+  Content-Type: application/x-www-form-urlencoded
+  Request Headers: {
+      Authorization: QBox &lt;AccessToken&gt;
+  }
+
+  HTTP/1.1 200 OK
+  Content-Type: application/json
+  Cache-Control: no-store
+</code></pre>
+
+<p><strong>请求参数</strong></p>
+
+<p><code>&lt;EncodedEntryURISrc&gt;</code>
+: 指定的具体的源文件，必填，<code>urlsafe_base64_encode(bucket:key)</code> 形式。参考：<a href="/v3/api/words/#EncodedEntryURI">EncodedEntryURI</a></p>
+
+<p><code>&lt;EncodedEntryURIDest&gt;</code>
+: 指定的具体的目标文件，必填，<code>urlsafe_base64_encode(bucket:key)</code> 形式。参考：<a href="/v3/api/words/#EncodedEntryURI">EncodedEntryURI</a></p>
+
+<p><a name="delete"></a></p>
+
+<h3>8. 删除指定文件</h3>
+
+<pre><code>  HTTP/1.1
+  POST http://rs.qbox.me/delete/&lt;EncodedEntryURI&gt;
+  Content-Type: application/x-www-form-urlencoded
+  Request Headers: {
+      Authorization: QBox &lt;AccessToken&gt;
+  }
+
+  HTTP/1.1 200 OK
+  Content-Type: application/json
+  Cache-Control: no-store
+</code></pre>
+
+<p><a name="drop"></a></p>
+
+<h3>9. 删除所有文件（整个空间/Bucket）</h3>
+
+<pre><code>  HTTP/1.1
+  POST http://rs.qbox.me/drop/&lt;Bucket&gt;
+  Content-Type: application/x-www-form-urlencoded
+  Request Headers: {
+      Authorization: QBox &lt;AccessToken&gt;
+  }
+
+  HTTP/1.1 200 OK
+  Content-Type: application/json
+  Cache-Control: no-store
+</code></pre>
+
+<p><a name="list"></a></p>
+
+<h3>10. 列出空间内的文件</h3>
+
+<pre><code>  HTTP/1.1
+  POST http://rsf.qbox.me/list? \
+       bucket=&lt;BucketName&gt;&amp; \
+       marker=&lt;Marker&gt;&amp; \
+       limit=&lt;Limit&gt;&amp; \
+       prefix=&lt;Prefix&gt;
+  Content-Type: application/x-www-form-urlencoded
+  Request Headers: {
+      Authorization: QBox &lt;AccessToken&gt;
+  }
+
+  HTTP/1.1 200 OK
+  Content-Type: application/json
+  Cache-Control: no-store
+  Response Body: {
+    marker: &lt;Marker&gt; //如果没有剩余条目，服务器返回这项为空
+    items: [
+      {
+        key：&lt;Key&gt;,
+        time: &lt;FilePutTime&gt;,
+        hash: &lt;FileETag&gt;,
+        fsize: &lt;FileSize&gt;,
+        mimeType: &lt;MimeType&gt;,
+        customer: &lt;EndUserId&gt;
+      },
+      ...
+    ]
+  }
+</code></pre>
+
+<p><strong>请求参数详解</strong></p>
+
+<table>
+<thead>
+<tr>
+<td>参数名</td>
+<td>说明</td>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>bucket</td>
+<td>必填，存储空间名称</td>
+</tr>
+
+<tr>
+<td>marker</td>
+<td>可选，为服务器上次dump导出返回的标记，没有可以不填</td>
+</tr>
+
+<tr>
+<td>limit</td>
+<td>可选，单次查询返回的最大条目数，最大不超过1000</td>
+</tr>
+
+<tr>
+<td>prefix</td>
+<td>可选，指定要过滤出来的前缀</td>
+</tr>
+</tbody>
+</table>
+
+<p><a name="batch"></a></p>
+
+<h3>11. 批量操作</h3>
+
+<p><strong>请求</strong></p>
+
+<pre><code>POST http://rs.qbox.me/batch
+Content-Type: application/x-www-form-urlencoded
+RequestBody: op=&lt;Operation&gt;&amp;op=&lt;Operation&gt;&amp;...
+</code></pre>
+
+<p>其中 op=<Operation> 是一个操作指令。例如 <code>/get/&lt;EncodedEntryURI&gt;</code>, <code>/stat/&lt;EncodedEntryURI&gt;</code>, <code>/delete/&lt;EncodedEntryURI&gt;</code>, …</p>
+
+<p><a name="batch-stat"></a></p>
+
+<h4>11.1 批量获取文件基本属性信息</h4>
+
+<pre><code>POST http://rs.qbox.me/batch
+Content-Type: application/x-www-form-urlencoded
+RequestBody: op=/stat/&lt;EncodedEntryURI&gt;&amp;op=/stat/&lt;EncodedEntryURI&gt;&amp;...
+</code></pre>
+
+<p><a name="batch-copy"></a></p>
+
+<h4>11.2 批量复制文件</h4>
+
+<pre><code>POST http://rs.qbox.me/batch
+Content-Type: application/x-www-form-urlencoded
+RequestBody: op=/copy/&lt;EncodedEntryURISrc&gt;/&lt;EncodedEntryURIDest&gt;&amp;op=/copy/&lt;EncodedEntryURISrc&gt;/&lt;EncodedEntryURIDest&gt;&amp;...
+</code></pre>
+
+<p><a name="batch-move"></a></p>
+
+<h4>11.3 批量移动文件</h4>
+
+<pre><code>POST http://rs.qbox.me/batch
+Content-Type: application/x-www-form-urlencoded
+RequestBody: op=/move/&lt;EncodedEntryURISrc&gt;/&lt;EncodedEntryURIDest&gt;&amp;op=/move/&lt;EncodedEntryURISrc&gt;/&lt;EncodedEntryURIDest&gt;&amp;...
+</code></pre>
+
+<p><a name="batch-delete"></a></p>
+
+<h4>11.4 批量删除文件</h4>
+
+<pre><code>POST http://rs.qbox.me/batch
+Content-Type: application/x-www-form-urlencoded
+RequestBody: op=/delete/&lt;EncodedEntryURI&gt;&amp;op=/delete/&lt;EncodedEntryURI&gt;&amp;...
+</code></pre>
+
+<p><strong>响应</strong></p>
+
+<pre><code>200 OK [
+    &lt;Result1&gt;, &lt;Result2&gt;, ...
+]
+298 Partial OK [
+    &lt;Result1&gt;, &lt;Result2&gt;, ...
+]
+
+&lt;Result&gt; 是 {
+    code: &lt;HttpCode int&gt;,
+    data: &lt;Data&gt; 或 error: &lt;ErrorMessage string&gt;
+}
+</code></pre>
+
+<p><a name="refresh-bucket"></a></p>
+
+<h3>12. 清除指定空间缓存</h3>
+
+<pre><code>  HTTP/1.1
+  POST http://uc.qbox.me/refreshBucket
+  Content-Type: application/x-www-form-urlencoded
+  Request Headers: {
+      Authorization: QBox &lt;AccessToken&gt;
+  }
+  Request Body: {
+      bucket: &lt;BucketName string&gt;
+  }
+
+  HTTP/1.1 200 OK
+  Content-Type: application/json
+  Cache-Control: no-store
+</code></pre>
+
+<p>您可以在 <a href="https://dev.qiniutek.com/buckets">七牛云存储开发者自助网站</a> 为指定的存储空间一键清除缓存。</p>
+
+<p><a name="list-all-buckets"></a></p>
+
+<h3>13. 列出所有空间（Buckets）</h3>
+
+<pre><code>  POST http://rs.qbox.me/buckets
+  Content-Type: application/x-www-form-urlencoded
+  Request Headers: {
+      Authorization: QBox &lt;ACCESS_TOKEN&gt;
+  }
+
+  HTTP/1.1 200 OK 
+  Content-Type: application/json
+  Cache-Control: no-store
+
+  Response Body: [
+      &lt;Bucket1&gt;, &lt;Bucket2&gt;, …, &lt;BucketN&gt;
+  ]
+</code></pre>
+
+				</article>
+			</div>
+
+			<div id="js-sidebar" class="sidebar-shell">
+				<div class="js-toggle-list sidebar-module expandable">
+					<ul>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">新手上路</span></h3>
+						<ul class="js-guides">
+							<li><a href="/guide/testing.html">测试指南</a></li>
+						</ul>
+						</li>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">API</span></h3>
+						<ul class="js-guides">
+              						<li><a href="/api/v3/auth.html">应用接入与认证授权</a></li>
+              						<li><a href="/api/v3/io.html">云存储接口</a></li>
+              						<li><a href="/api/v3/foimg.html">云处理之图像处理接口</a></li>
+              						<li><a href="/api/v3/avfop.html">云处理之音频/视频处理接口</a></li>
+              						<li><a href="/api/v3/words.html">理解常用术语</a></li>
+              						<li><a href="/api/v3/code.html">错误码参照表</a></li>
+						</ul>
+						</li>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">SDK</span></h3>
+						<ul class="js-guides">
+                					<li><a href="/ios-sdk/v3/">iOS</a></li>
+                					<li><a href="/android-sdk/v3/">Android</a></li>
+                					<li><a href="/c-sdk/v3/">C/C++</a></li>
+                					<li><a href="/csharp-sdk/v3/">C#</a></li>
+                					<li><a href="/java-sdk/v3/">Java</a></li>
+                					<li><a href="/php-sdk/v3/php5-3.html">PHP5.3</a></li>
+                					<li><a href="/php-sdk/v3/php5.html">PHP5</a></li>
+                					<li><a href="/python-sdk/v3/">Python</a></li>
+                					<li><a href="/perl-sdk/v3/">Perl</a></li>
+                					<li><a href="/ruby-sdk/v3/">Ruby</a></li>
+                					<li><a href="/nodejs-sdk/v3/">NodeJS</a></li>
+                					<li><a href="/go-sdk/v3/">Golang</a></li>						
+						</ul>
+						</li>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">上传及开发调试工具</span></h3>
+						<ul class="js-guides">
+                					<li><a href="/tools/v3/qrsync.html">qrsync</a></li>
+                					<li><a href="/tools/v3/qboxrsctl.html">qboxrsctl</a></li>
+                					<li><a href="/tools/v3/qiniu-autosync.html">qiniu-autosync</a></li>
+						</ul>
+						</li>
+					</ul>
+				</div> <!-- /sidebar-module -->
+				<div class="sidebar-module">
+					<p>帮助联系: <a href="mailto:support@qiniu.com">support@qiniu.com</a></p>
+				</div>
+			</div><!-- /sidebar-shell -->
+
+		</div><!-- #wrapper -->
+
+		<div id="footer" >
+			<div class="lower_footer">
+				<div class="footer_inner clearfix">
+					<p>&copy; <span id="year">2012-2013</span> <a href="/">docs.qiniu.com</a>. All rights reserved. Powerd by <a href="http://www.qiniu.com" target="_blank">七牛云存储</a>. <a href="http://www.miibeian.gov.cn/" target="_blank">沪ICP备11037377号-2</a></p>
+				</div><!-- /.site -->
+			</div><!-- /.lower_footer -->
+		</div><!-- /#footer -->
+
+		<!-- <div class="popover fade top in"><div class="arrow"></div><h3 class="popover-title">云存储接口</h3><div id="popover-content"></div></div> -->
+		<script src="/static/js/jquery.js" type="text/javascript"></script>
+		<script src="/static/js/qiniudoc.js" type="text/javascript"></script>
+		<script src="/static/js/jquery.scrollUp.min.js"></script>
+		<script type="text/javascript">
+			   //var sdkName = "云存储接口"
+				 //$("#popover-content").html($("article ul")[0].outerHTML)
+				 (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+					(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+					m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+					})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+					ga('create', 'UA-40857860-3', 'qiniu.com');
+					ga('send', 'pageview');
+		 </script>
+	 </body>
+ </html>
+

@@ -1,0 +1,264 @@
+
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="robots" content="all" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<meta name="description" content="七牛云存储API和SDK文档" />
+		<meta name="keywords" content="七牛, 七牛云存储, 七牛云存储API, 七牛云存储SDK, qrsync, qboxrsctl, QinuRS, S3" />
+		<meta name="author" content="qiniu.com" />
+		<meta name="copyright" content="qiniu.com" />
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<meta http-equiv="Content-Language" content="zh-cn" />
+		<meta http-equiv="imagetoolbar" content="false" />
+		<meta name="MSSmartTagsPreventParsing" content="true" />
+		<title>iOS SDK | 七牛云存储</title>
+		<link rel="shortcut icon" href="/favicon.ico" type="image/gif" />
+		<link href="/static/css/reset.css" rel="stylesheet" type="text/css" />
+		<link href="/static/css/960.css" rel="stylesheet" type="text/css" />
+		<link href="/static/css/uv_active4d.css" rel="stylesheet" type="text/css" />
+		<link href="/static/css/documentation.css" media="screen" rel="stylesheet" type="text/css">
+	</head>
+	<body class="api">
+		<div id="header-wrapper">
+			<div id="header">
+				<div>
+					<a class="logo" href="/">七牛云存储</a>
+					<ul class="nav">
+						<li><a href="https://portal.qiniu.com">开发者平台</a></li>
+						<li><a href="http://www.qiniu.com">七牛官网</a></li>
+						<!-- <li><a href="/faq/FAQ.html">FAQ</a></li> -->
+					</ul>
+				</div>
+			</div><!-- #header -->
+		</div><!-- #header-wrapper -->
+
+		<div id="wrapper">
+			<div class="content">	
+				<h1>iOS SDK<span id="version">v3</span></h1>
+				<article>
+				<ul>
+<li>iOS SDK 源码地址：<a href="https://github.com/qiniu/ios-sdk">https://github.com/qiniu/ios-sdk</a></li>
+<li>iOS SDK 下载地址：<a href="https://github.com/qiniu/ios-sdk/tags">https://github.com/qiniu/ios-sdk/tags</a></li>
+</ul>
+
+<p>本SDK目前只提供了一个简单版本的上传功能，在类QiniuSimpleUploader中实现。</p>
+
+<h2>QiniuSimpleUploader</h2>
+
+<p>QiniuSimpleUploader类提供了简单易用的iOS端文件上传功能。它的基本用法非常简单：</p>
+
+<pre><code>// 创建一个QiniuSimpleUploader实例。
+// 需要保持这个变量，以便于用户取消某一个上传过程，通常创建的实例会保存为ViewController的成员变量。
+_uploader = [[QiniuSimpleUploader uploaderWithToken:[self tokenWithScope:bucket]] retain];
+
+// 设置消息器，消息接收器必须实现接口QiniuUploadDelegate。    
+_uploader.delegate = self;
+
+// 开始上传  
+[_uploader upload:filePath bucket:bucket key:key extraParams:nil];
+</code></pre>
+
+<p>如本例所示，如果我们需要保持该实例，我们需要手动的调用retain和release来避免内存出错或泄漏。</p>
+
+<h3>关于extraParams</h3>
+
+<p>一般情况下，开发者可以忽略upload方法中的extraParams参数，即在调用时保持extraParams的值为nil即可。但对于一些特殊的场景，我们可以给extraParams传入一些高级选项以更精确的控制上传行为。</p>
+
+<p>extraParams是一个NSDictionary类型，upload方法会检查该字典中是否存在预定义的一些键，若有则添加到发送给服务器的请求中。预定义的键名在QiniuSimpleUploader.h的顶部，当前包含kMimeTypeKey、kCustomMetaKey、kCrc32Key、kCallbackParamsKey。</p>
+
+<h4>kMimeTypeKey</h4>
+
+<p>为上传的文件设置一个自定义的MIME类型。具体参见<a href="http://docs.qiniutek.com/v3/api/words/#EncodedMimeType">http://docs.qiniutek.com/v3/api/words/#EncodedMimeType</a>。</p>
+
+<h4>kCustomMetaKey</h4>
+
+<p>自定义文本信息，可用于备注。通常不使用。</p>
+
+<h4>kCrc32Key</h4>
+
+<p>文件的CRC32校验值。如果设置了该可选参数，服务端会对上传的文件进行CRC32校验，如果校验失败会返回406错误。</p>
+
+<p>以下是一个校验小文件CRC的例子：</p>
+
+<pre><code>NSData *buffer = [NSData dataWithContentsOfFile:_filePath];
+
+uLong crc = crc32(0L, Z_NULL, 0);
+crc = crc32(crc, [buffer bytes], [buffer length]);
+
+NSString *crcStr = [NSString stringWithFormat:@&quot;%lu&quot;, crc];
+
+NSDictionary *params = [NSDictionary dictionaryWithObjectsAndKeys:crcStr, kCrc32Key, nil];
+
+[uploader upload:_filePath bucket:kBucketName key:[NSString stringWithFormat:@&quot;test-%@.png&quot;, timeDesc] extraParams:params];
+</code></pre>
+
+<p>这个例子直接在内存中对整个文件进行CRC校验，不适合大文件的CRC计算。如果需要计算大文件的CRC32，可以参照zlib.h中建议的做法，伪代码如下：</p>
+
+<pre><code> // zlib.h
+
+ uLong crc = crc32(0L, Z_NULL, 0);
+
+ while (read_buffer(buffer, length) != EOF) {
+   crc = crc32(crc, buffer, length);
+ }
+ if (crc != original_crc) error();
+</code></pre>
+
+<h4>kCallbackParamsKey</h4>
+
+<p>用于文件上传成功后执行回调，七牛云存储服务器会向客户方的业务服务器 POST 这些指定的参数。关于该参数的细节，请参见<a href="http://docs.qiniutek.com/v3/api/words/#EncodedMimeType">http://docs.qiniutek.com/v3/api/words/#EncodedMimeType</a>中关于params的描述。</p>
+
+<p>另外，虽然params支持JSON和URL参数两种格式，由于在客户端无法直接从token字符串中提取callbackBodyType信息，我们目前暂时只实现了URL参数格式，即如下所示：</p>
+
+<pre><code>bucket=&lt;BucketName&gt;&amp;key=&lt;FileUniqKey&gt;&amp;uid=&lt;customer
+</code></pre>
+
+<h2>QiniuUploadDelegate</h2>
+
+<p>这个delegate接口由调用者实现，以获取上传的结果和进度信息。</p>
+
+<pre><code>@protocol QiniuUploadDelegate &lt;NSObject&gt;
+
+@optional
+
+// Progress updated. 1.0 indicates 100%.
+- (void)uploadProgressUpdated:(NSString *)filePath percent:(float)percent;
+
+@required
+
+// Upload completed successfully.
+- (void)uploadSucceeded:(NSString *)filePath hash:(NSString *)hash;
+
+// Upload failed.
+- (void)uploadFailed:(NSString *)filePath error:(NSError *)error;
+
+@end
+</code></pre>
+
+<p>可以看到，该接口包含了两个必须实现的方法和一个可选的方法。我们可以选择由ViewController直接实现，类似于如下：</p>
+
+<pre><code>@interface QiniuViewController : UIViewController&lt;QiniuUploadDelegate, …&gt;
+</code></pre>
+
+<p>这个接口可以被QiniuSimpleUploader和QiniuResumableUploader共用。因此对于当前使用QiniuSimpleUploader的开发者，之后换成QiniuResumableUploader将只需要调整极少的代码。</p>
+
+<h2>使用方法</h2>
+
+<p>因为当前的SDK只包含了3个.h文件和一个.m文件，为避免需要管理工程依赖关系，开发者完全可以直接将所提供的这几个文件直接添加到自己的工程中，当然，也需要添加对应的依赖包：JSONKit、ASIHttpRequest和GTMBase64。</p>
+
+<p>本SDK附带的QiniuDemo是以静态库的方式使用QiniuSDK。如果开发者希望用这种方式引入QiniuSDK，可以借鉴一下QiniuDemo的工程设置。</p>
+
+<p>运行QiniuDemo之前需要先设置代码中的三个常量：kAccessKey、kSecretKey和kBucketName。相应的值都可以在我们的<a href="https://dev.qiniutek.com/">开发者平台</a>上操作和获取。</p>
+
+<h2>注意事项</h2>
+
+<p>如果以静态链接库的方式使用该SDK，请注意您的工程设置中需要设置-ObjC标志，这是因为该SDK中使用了Objective-C category功能来实现JSON字符串的序列化和反序列化，而没有-ObjC标志的话Objective-C category功能将不能正常工作，错误表现为直接异常退出。</p>
+
+<p>另外，由于QiniuSimpleUploader采用的是单次HTTP请求发送整个文件内容的方法，因此并不适合用于上传大尺寸的文件。如果您有这方面的需求，请<a href="https://dev.qiniutek.com/feedback">联系我们</a>。我们稍后也会在SDK中增加支持断点续传的上传类。</p>
+
+<p><a name="Contributing"></a></p>
+
+<h2>贡献代码</h2>
+
+<p>七牛云存储 iOS SDK 源码地址：<a href="https://github.com/qiniu/ios-sdk">https://github.com/qiniu/ios-sdk</a></p>
+
+<ol>
+<li>登录 <a href="https://github.com">github.com</a></li>
+<li>Fork <a href="https://github.com/qiniu/ios-sdk">https://github.com/qiniu/ios-sdk</a></li>
+<li>创建您的特性分支 (<code>git checkout -b my-new-feature</code>)</li>
+<li>提交您的改动 (<code>git commit -am 'Added some feature'</code>)</li>
+<li>将您的改动记录提交到远程 <code>git</code> 仓库 (<code>git push origin my-new-feature</code>)</li>
+<li>然后到 github 网站的该 <code>git</code> 远程仓库的 <code>my-new-feature</code> 分支下发起 Pull Request</li>
+</ol>
+
+<p><a name="License"></a></p>
+
+<h2>许可证</h2>
+
+<p>Copyright &copy; 2012-2013 qiniutek.com</p>
+
+				</article>
+			</div>
+
+			<div id="js-sidebar" class="sidebar-shell">
+				<div class="js-toggle-list sidebar-module expandable">
+					<ul>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">新手上路</span></h3>
+						<ul class="js-guides">
+							<li><a href="/guide/testing.html">测试指南</a></li>
+						</ul>
+						</li>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">API</span></h3>
+						<ul class="js-guides">
+              						<li><a href="/api/v3/auth.html">应用接入与认证授权</a></li>
+              						<li><a href="/api/v3/io.html">云存储接口</a></li>
+              						<li><a href="/api/v3/foimg.html">云处理之图像处理接口</a></li>
+              						<li><a href="/api/v3/avfop.html">云处理之音频/视频处理接口</a></li>
+              						<li><a href="/api/v3/words.html">理解常用术语</a></li>
+              						<li><a href="/api/v3/code.html">错误码参照表</a></li>
+						</ul>
+						</li>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">SDK</span></h3>
+						<ul class="js-guides">
+                					<li><a href="/ios-sdk/v3/">iOS</a></li>
+                					<li><a href="/android-sdk/v3/">Android</a></li>
+                					<li><a href="/c-sdk/v3/">C/C++</a></li>
+                					<li><a href="/csharp-sdk/v3/">C#</a></li>
+                					<li><a href="/java-sdk/v3/">Java</a></li>
+                					<li><a href="/php-sdk/v3/php5-3.html">PHP5.3</a></li>
+                					<li><a href="/php-sdk/v3/php5.html">PHP5</a></li>
+                					<li><a href="/python-sdk/v3/">Python</a></li>
+                					<li><a href="/perl-sdk/v3/">Perl</a></li>
+                					<li><a href="/ruby-sdk/v3/">Ruby</a></li>
+                					<li><a href="/nodejs-sdk/v3/">NodeJS</a></li>
+                					<li><a href="/go-sdk/v3/">Golang</a></li>						
+						</ul>
+						</li>
+						<li class="js-topic">
+						<h3><a href="#" class="js-expand-btn expanded">&nbsp;</a><span class="spapi">上传及开发调试工具</span></h3>
+						<ul class="js-guides">
+                					<li><a href="/tools/v3/qrsync.html">qrsync</a></li>
+                					<li><a href="/tools/v3/qboxrsctl.html">qboxrsctl</a></li>
+                					<li><a href="/tools/v3/qiniu-autosync.html">qiniu-autosync</a></li>
+						</ul>
+						</li>
+					</ul>
+				</div> <!-- /sidebar-module -->
+				<div class="sidebar-module">
+					<p>帮助联系: <a href="mailto:support@qiniu.com">support@qiniu.com</a></p>
+				</div>
+			</div><!-- /sidebar-shell -->
+
+		</div><!-- #wrapper -->
+
+		<div id="footer" >
+			<div class="lower_footer">
+				<div class="footer_inner clearfix">
+					<p>&copy; <span id="year">2012-2013</span> <a href="/">docs.qiniu.com</a>. All rights reserved. Powerd by <a href="http://www.qiniu.com" target="_blank">七牛云存储</a>. <a href="http://www.miibeian.gov.cn/" target="_blank">沪ICP备11037377号-2</a></p>
+				</div><!-- /.site -->
+			</div><!-- /.lower_footer -->
+		</div><!-- /#footer -->
+
+		<!-- <div class="popover fade top in"><div class="arrow"></div><h3 class="popover-title">iOS SDK</h3><div id="popover-content"></div></div> -->
+		<script src="/static/js/jquery.js" type="text/javascript"></script>
+		<script src="/static/js/qiniudoc.js" type="text/javascript"></script>
+		<script src="/static/js/jquery.scrollUp.min.js"></script>
+		<script type="text/javascript">
+			   //var sdkName = "iOS SDK"
+				 //$("#popover-content").html($("article ul")[0].outerHTML)
+				 (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+					(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+					m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+					})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+					ga('create', 'UA-40857860-3', 'qiniu.com');
+					ga('send', 'pageview');
+		 </script>
+	 </body>
+ </html>
+
